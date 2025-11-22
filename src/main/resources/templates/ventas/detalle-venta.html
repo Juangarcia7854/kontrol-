@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{layouts/admin-layout :: admin-layout(pageTitle=${pageTitle}, content=~{::content})}">
+<head>
+    <title th:text="${pageTitle ?: 'Detalle de Venta'}">Detalle de Venta</title>
+    
+    <style>
+        .invoice-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #e3e6f0;
+        }
+        
+        /* --- ⬇️ REGLA DE CSS ELIMINADA ⬇️ --- */
+        /* Ya no necesitamos la regla .invoice-header .company-logo img
+           porque el logo nuevo ('kontrol-plus-logo-factura.png')
+           ya tiene el tamaño correcto.
+        */
+        /* --- ⬆️ FIN DE LA CORRECCIÓN ⬆️ --- */
+
+        .invoice-header .company-details {
+            text-align: right;
+            font-size: 0.9rem;
+            color: #5a5c69;
+        }
+        .invoice-header .company-details h4 {
+            margin: 0;
+            color: #000;
+            font-weight: bold;
+        }
+        /* Estilos para NIT y datos */
+        .invoice-header .company-details p {
+            margin-bottom: 2px; /* Menos espacio entre líneas */
+        }
+        .invoice-details-table {
+            font-size: 0.9rem;
+            margin-top: 1.5rem;
+        }
+        .invoice-details-table td {
+            border: none !important;
+            padding: 2px 8px !important;
+        }
+        .invoice-details-table strong {
+            color: #5a5c69;
+        }
+
+        /* Estilos de impresión */
+        @media print {
+            .invoice-header {
+                border-bottom: 2px solid #ccc;
+            }
+             .invoice-header .company-details {
+                color: #000;
+             }
+             .invoice-details-table strong {
+                 color: #000;
+             }
+        }
+    </style>
+</head>
+<body>
+<th:block th:fragment="content">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4 no-print">
+        <h1 class="h3 mb-0 text-gray-800" th:text="${pageTitle}">Detalle de Venta</h1>
+        <div>
+            <button type="button" onclick="window.print();" class="btn btn-info btn-icon-split mr-2">
+                <span class="icon text-white-50"><i class="fas fa-print"></i></span>
+                <span class="text">Imprimir</span>
+            </button>
+            <a th:href="@{/ventas}" class="btn btn-outline-secondary btn-icon-split">
+                <span class="icon text-gray-600"><i class="fas fa-arrow-left"></i></span>
+                <span class="text">Volver al Historial</span>
+            </a>
+        </div>
+    </div>
+
+    <div id="printableArea">
+        <div class="card shadow mb-4">
+            
+            <div class="card-body" th:if="${venta}">
+                
+                <div class="invoice-header">
+                    <div class="company-logo">
+                        
+                        <img th:src="@{/images/kontrol-plus-logo-factura.png}" alt="Logo Kontrol+">
+                        </div>
+                    
+                    <div class="company-details">
+                        <h4 th:text="'Kontrol+'">Kontrol+</h4>
+                        <p th:text="'Carrera 15 #102-45, Oficina 302'">Carrera 15 #102-45, Oficina 302</p>
+                        <p th:text="'Bogotá D.C., Colombia'">Bogotá D.C., Colombia</p>
+                        <p th:text="'+57 310 845 7623'">+57 310 845 7623</p>
+                        <p th:text="'contacto@kontrolplus.co'">contacto@kontrolplus.co</p>
+                    </div>
+
+                </div>
+
+                <div class="row">
+                    <div class="col-12">
+                        <table class="table invoice-details-table">
+                            <tr>
+                                <td><strong>Factura N°:</strong></td>
+                                <td th:text="${venta.numeroFactura}" class="font-weight-bold h5 text-primary"></td>
+                                <td><strong>Fecha y Hora:</strong></td>
+                                <td th:text="${#temporals.format(venta.fechaVenta, 'dd/MM/yyyy HH:mm a')}"></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Cliente:</strong></td>
+                                <td th:text="${venta.nombreCliente}"></td>
+                                <td><strong>Vendedor:</strong></td>
+                                <td th:text="${venta.usernameUsuario}"></td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
+                <h6 class="mt-4 mb-3 font-weight-bold text-primary">Productos Vendidos:</h6>
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead class="thead-light">
+                            <tr>
+                                <th>Producto</th>
+                                <th class="text-center">Cantidad</th>
+                                <th class="text-right">Precio Unitario</th>
+                                <th class="text-right">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="detalle : ${venta.detalles}">
+                                <td th:text="${detalle.nombreProducto}"></td>
+                                <td class="text-center" th:text="${detalle.cantidad}"></td>
+                                <td class="text-right" th:text="${#numbers.formatCurrency(detalle.precioUnitario)}"></td>
+                                <td class="text-right" th:text="${#numbers.formatCurrency(detalle.subtotal)}"></td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr style="background-color: #f8f9fc;">
+                                <td colspan="3" class="text-right font-weight-bold border-top-0">SUBTOTAL:</td>
+                                <td class="text-right font-weight-bold border-top-0" th:text="${#numbers.formatCurrency(venta.subtotal)}"></td>
+                            </tr>
+                            <tr>
+                                <td colspan="3" class="text-right font-weight-bold border-top-0" th:text="'IVA (' + ${venta.porcentajeIva} + '%):'"></td>
+                                <td class="text-right font-weight-bold border-top-0" th:text="${#numbers.formatCurrency(venta.montoIva)}"></td>
+                            </tr>
+                            <tr class="bg-primary text-white">
+                                <td colspan="3" class="text-right font-weight-bold h5 border-top-0">TOTAL VENTA:</td>
+                                <td class="text-right font-weight-bold h5 border-top-0" th:text="${#numbers.formatCurrency(venta.totalVenta)}"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+            </div> </div>
+    </div>
+</th:block>
+</body>
+</html>

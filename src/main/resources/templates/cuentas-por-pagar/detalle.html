@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layouts/admin-layout :: admin-layout(pageTitle=${pageTitle}, content=~{::content})}">
+<head>
+    <title th:text="${pageTitle}">Detalle de Cuenta por Pagar</title>
+</head>
+<body>
+<th:block th:fragment="content">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800" th:text="${pageTitle}">Detalle de Cuenta por Pagar</h1>
+    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Información de Pago</h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>ID de la Cuenta:</strong> <span th:text="${cuenta.id}"></span></p>
+                    <p><strong>ID de la Compra:</strong> <span th:text="${cuenta.compraId}"></span></p>
+                    <p><strong>Proveedor:</strong> <span th:text="${proveedor?.nombre ?: 'Proveedor Desconocido'}"></span></p>
+                    <p><strong>RUC/NIT:</strong> <span th:text="${proveedor?.rucNit ?: 'N/A'}"></span></p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Fecha Vencimiento:</strong> <span th:text="${#temporals.format(cuenta.fechaDeVencimiento, 'dd/MM/yyyy')}"></span></p>
+                    <p><strong>Monto Total:</strong> <span th:text="${#numbers.formatCurrency(cuenta.montoTotal)}"></span></p>
+                    <p><strong>Monto Pagado:</strong> <span th:text="${#numbers.formatCurrency(cuenta.montoPagado)}"></span></p>
+                    <p><strong>Saldo Pendiente:</strong> 
+                        <span th:text="${#numbers.formatCurrency(cuenta.montoTotal.subtract(cuenta.montoPagado))}"></span>
+                    </p>
+                    <p><strong>Estado:</strong> 
+                        <span th:with="estadoText=${cuenta.estado.name()}"
+                              th:classappend="${estadoText == 'PENDIENTE' ? 'badge-warning' : (estadoText == 'PAGADA' ? 'badge-success' : (estadoText == 'VENCIDA' ? 'badge-danger' : 'badge-secondary'))}" 
+                              th:text="${estadoText}"
+                              class="badge"></span>
+                    </p>
+                </div>
+            </div>
+            
+            <hr>
+            
+            <a th:href="@{/cuentas-por-pagar}" class="btn btn-secondary mt-3">
+                <i class="fas fa-arrow-left mr-1"></i> Volver al Listado
+            </a>
+            
+            <a th:href="@{/cuentas-por-pagar/registrar-pago/{id}(id=${cuenta.id})}" 
+               th:if="${cuenta.estado.name() == 'PENDIENTE' or cuenta.estado.name() == 'VENCIDA'}"
+               class="btn btn-success mt-3 ml-2">
+                <i class="fas fa-money-bill-wave mr-1"></i> Registrar Pago
+            </a>
+            
+            <form th:action="@{/cuentas-por-pagar/anular/{id}(id=${cuenta.id})}" method="POST" class="d-inline"
+                  th:if="${cuenta.estado.name() == 'PENDIENTE' or cuenta.estado.name() == 'VENCIDA'}"
+                  onsubmit="return confirm('¿Estás seguro de que deseas anular esta cuenta desde el detalle?');">
+                <button type="submit" class="btn btn-danger mt-3 ml-2">
+                    <i class="fas fa-times-circle mr-1"></i> Anular
+                </button>
+            </form>
+
+        </div>
+    </div>
+</th:block>
+</body>
+</html>

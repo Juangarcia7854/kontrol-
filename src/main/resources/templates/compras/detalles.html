@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org" 
+    th:replace="~{layouts/admin-layout :: admin-layout(pageTitle=${pageTitle}, content=~{::section})}"
+>
+<head>
+    <title th:text="${pageTitle}">Detalles de Compra</title>
+</head>
+<body>
+
+<section>
+    <div class="container-fluid">
+        
+        <div class="d-sm-flex align-items-center justify-content-between mb-4">
+            <h2 class="h3 mb-0 text-gray-800">Detalles de Compra #<span th:text="${compra.id}">ID de Compra</span></h2>
+        </div>
+        
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Información General</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Proveedor:</strong> <span th:text="${proveedor != null ? proveedor.nombre : 'N/A'}">Nombre Proveedor</span></p>
+                        <p><strong>Fecha de Compra:</strong> <span th:text="${#temporals.format(compra.fechaDeCompra, 'dd/MM/yyyy HH:mm')}">Fecha</span></p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>ID de Compra:</strong> <span th:text="${compra.id}">ID de Compra</span></p>
+                        <p><strong>Total Pagado:</strong> <span th:text="${#numbers.formatCurrency(compra.total)}">Total</span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Productos Comprados</h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered" width="100%" cellspacing="0">
+                        <thead>
+                            <tr>
+                                <th>Producto</th>
+                                <th>Cantidad</th>
+                                <th>Precio Unitario</th>
+                                <th>Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="detalle : ${compra.detalles}"> 
+                                <td th:text="${detalle.nombreProducto}">Nombre Producto</td> 
+                                
+                                <td th:text="${detalle.cantidad}">5</td>
+                                
+                                <td th:text="${#numbers.formatCurrency(detalle.precioUnitario)}">$100.00</td>
+                                
+                                <td th:text="${#numbers.formatCurrency(detalle.subtotal)}">$500.00</td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="3" class="text-right"><strong>TOTAL:</strong></td>
+                                <td th:text="${#numbers.formatCurrency(compra.total)}"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <a th:href="@{/compras}" class="btn btn-secondary mt-3">
+            <i class="fas fa-arrow-left"></i> Volver al Listado de Compras
+        </a>
+        
+    </div>
+</section>
+
+</body>
+</html>

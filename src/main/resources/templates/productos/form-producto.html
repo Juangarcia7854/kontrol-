@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layouts/admin-layout :: admin-layout(pageTitle=${pageTitle}, content=~{::content})}">
+<head>
+    <title th:text="${pageTitle ?: 'Formulario de Producto'}">Formulario de Producto</title>
+    <style>
+        .imagen-actual-preview {
+            max-width: 150px;
+            max-height: 150px;
+            margin-top: 10px;
+            border: 1px solid #ddd;
+            padding: 5px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+<th:block th:fragment="content">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800" th:text="${pageTitle}">Formulario de Producto</h1>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                     <h6 class="m-0 font-weight-bold text-primary" th:text="${editMode} ? 'Editar Producto' : 'Registrar Nuevo Producto'">Detalles del Producto</h6>
+                </div>
+                <div class="card-body">
+                    <form th:action="@{/productos/guardar}" th:object="${producto}" method="post" enctype="multipart/form-data">
+
+                        <th:block th:if="${editMode}">
+                            <input type="hidden" th:field="*{id}" />
+                        </th:block>
+
+                        <div class="form-group">
+                            <label for="nombre">Nombre del Producto:</label>
+                            <input type="text" th:field="*{nombre}" class="form-control" id="nombre" required/>
+                            <div th:if="${#fields.hasErrors('nombre')}" th:errors="*{nombre}" class="invalid-feedback"></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="descripcion">Descripción:</label>
+                            <textarea th:field="*{descripcion}" class="form-control" id="descripcion" rows="3"></textarea>
+                            <div th:if="${#fields.hasErrors('descripcion')}" th:errors="*{descripcion}" class="invalid-feedback"></div>
+                        </div>
+
+                        <div class="form-row">
+                             <div class="form-group col-md-6">
+                                 <label for="precio">Precio:</label>
+                                 <div class="input-group">
+                                     <div class="input-group-prepend"><span class="input-group-text">$</span></div>
+                                     <input type="number" th:field="*{precio}" class="form-control" id="precio" step="0.01" required/>
+                                 </div>
+                                 <div th:if="${#fields.hasErrors('precio')}" th:errors="*{precio}" class="invalid-feedback d-block"></div>
+                             </div>
+                             
+                             <div class="form-group col-md-6" th:if="${!editMode}">
+                                 <label for="stockInicial">Stock Inicial:</label>
+                                 <input type="number" th:field="*{stockInicial}" class="form-control" id="stockInicial" value="0" min="0" required/>
+                                 <div th:if="${#fields.hasErrors('stockInicial')}" th:errors="*{stockInicial}" class="invalid-feedback"></div>
+                                 <small class="form-text text-muted">Cantidad para el registro inicial en inventario.</small>
+                             </div>
+                         </div>
+                         
+                         <div class="form-group">
+                             <label for="categoria">Categoría:</label>
+                             <input type="text" th:field="*{categoria}" class="form-control" id="categoria"/>
+                             <div th:if="${#fields.hasErrors('categoria')}" th:errors="*{categoria}" class="invalid-feedback"></div>
+                         </div>
+                         <div class="form-group">
+                             <label for="codigoBarras">Código de Barras (Opcional):</label>
+                             <input type="text" th:field="*{codigoBarras}" class="form-control" id="codigoBarras"/>
+                             <div th:if="${#fields.hasErrors('codigoBarras')}" th:errors="*{codigoBarras}" class="invalid-feedback"></div>
+                         </div>
+
+                        <div class="form-group" th:if="${editMode and imagenUrlActual != null and !imagenUrlActual.isEmpty()}">
+                            <label>Imagen Actual:</label>
+                            <div>
+                                <img th:src="@{${imagenUrlActual}}" th:alt="${producto.nombre}" class="imagen-actual-preview img-thumbnail"/>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                             <label for="imagenFile" th:text="${editMode and imagenUrlActual != null and !imagenUrlActual.isEmpty()} ? 'Reemplazar Imagen:' : 'Subir Imagen:'">Subir Imagen:</label>
+                             <input type="file" name="imagenFile" id="imagenFile" class="form-control-file" accept="image/*" />
+                        </div>
+
+                        <hr class="my-4">
+
+                        <div class="text-right">
+                            <a th:href="@{/productos}" class="btn btn-outline-secondary mr-2">
+                                <i class="fas fa-times"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i>
+                                <span th:text="${editMode} ? 'Actualizar Producto' : 'Guardar Producto'">Guardar</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</th:block>
+</body>
+</html>

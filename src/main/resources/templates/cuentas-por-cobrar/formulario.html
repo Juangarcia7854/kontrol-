@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+    <div th:replace="~{layouts/admin-layout :: admin-layout(pageTitle=${pageTitle}, content=~{::.admin-content-inner})}">
+        <div class="admin-content-inner">
+
+            <h1 class="h3 mb-4 text-gray-800">Crear Nueva Cuenta por Cobrar</h1>
+
+            <div class="card shadow mb-4">
+                <div class="card-body">
+                    <form th:action="@{/cuentas-por-cobrar/guardar}" th:object="${cuenta}" method="POST">
+                        
+                        <div class="form-group">
+                            <label for="venta">Venta Asociada</label>
+                            <select id="venta" th:field="*{ventaId}" class="form-control" required>
+                                <option value="">-- Seleccione una Venta --</option>
+                                <option th:each="venta : ${listaVentas}" th:value="${venta.id}" th:text="'Venta ID: ' + ${venta.id}"></option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="cliente">Cliente</label>
+                            <select id="cliente" th:field="*{clienteId}" class="form-control" required>
+                                <option value="">-- Seleccione un Cliente --</option>
+                                <option th:each="cliente : ${listaClientes}" th:value="${cliente.id}" th:text="${cliente.nombre}"></option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group col-md-6">
+                                <label for="montoTotal">Monto Total</label>
+                                <input type="number" step="0.01" class="form-control" id="montoTotal" th:field="*{montoTotal}" placeholder="100000.00" required>
+                            </div>
+                            <div class="form-group col-md-6">
+                                <label for="montoPagado">Monto Pagado (Inicial)</label>
+                                <input type="number" step="0.01" class="form-control" id="montoPagado" th:field="*{montoPagado}" placeholder="0.00">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group col-md-6">
+                                <label for="fechaVencimiento">Fecha de Vencimiento</label>
+                                <input type="date" class="form-control" id="fechaVencimiento" th:field="*{fechaDeVencimiento}" required>
+                            </div>
+                            <div class="form-group col-md-6">
+                                <label for="estado">Estado</label>
+                                <select id="estado" th:field="*{estado}" class="form-control" required>
+                                    <option th:each="est : ${T(com.tusistema.sistemaventas.model.CuentaPorCobrar.EstadoCuenta).values()}"
+                                            th:value="${est}" 
+                                            th:text="${est.name()}"></option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">Guardar Cuenta</button>
+                        <a th:href="@{/cuentas-por-cobrar}" class="btn btn-secondary">Cancelar</a>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</body>
+</html>

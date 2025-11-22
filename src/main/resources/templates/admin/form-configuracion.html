@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es" th:lang="${#locale.language}">
+<head>
+    <meta charset="UTF-8" />
+    <title th:text="${pageTitle != null ? pageTitle : #{configuracion.titulo}}">Configuración</title>
+    <style>
+        /* (mantén tu CSS actual aquí) */
+        body { font-family: Arial, sans-serif; margin: 20px; font-size: 14px; }
+        .container { max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 5px; background-color: #f9f9f9;}
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input[type="text"], input[type="email"], input[type="number"], input[type="url"], textarea, select {
+            width: calc(100% - 18px); padding: 8px; border: 1px solid #ccc; border-radius: 4px;
+        }
+        input[type="checkbox"] { margin-right: 5px; vertical-align: middle; }
+        .checkbox-label { font-weight: normal; }
+        .form-actions {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        .btn {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+        .btn-primary {
+            background-color: #007bff; color: white;
+        }
+        .btn-primary:hover { background-color: #0056b3; }
+        .btn-secondary {
+            background-color: #6c757d; color: white;
+        }
+        .btn-secondary:hover { background-color: #5a6268; }
+        .message { padding: 10px; margin-bottom: 15px; border-radius: 4px; border: 1px solid transparent; }
+        .success { color: #155724; background-color: #d4edda; border-color: #c3e6cb; }
+        .error { color: #721c24; background-color: #f8d7da; border-color: #f5c6cb; }
+        .error-field { color: red; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 th:text="${pageTitle != null ? pageTitle : #{configuracion.titulo}}">Configuración</h1>
+
+        <div th:if="${successMessage}" class="message success" th:text="${successMessage}"></div>
+        <div th:if="${param.exito}" class="message success">
+            <span th:text="#{configuracion.guardadoExito}">¡Cambios guardados exitosamente!</span>
+        </div>
+        <div th:if="${formErrorMessage}" class="message error" th:text="${formErrorMessage}"></div>
+
+        <form th:action="@{/admin/configuracion/editar}" method="post" th:object="${configuracionSistema}">
+            <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+
+            <div class="form-group">
+                <label for="nombreEmpresa" th:text="#{configuracion.nombreEmpresa}">Nombre de la Empresa:</label>
+                <input type="text" id="nombreEmpresa" th:field="*{nombreEmpresa}" />
+                <span th:if="${#fields.hasErrors('nombreEmpresa')}" th:errors="*{nombreEmpresa}" class="error-field"></span>
+            </div>
+
+            <div class="form-group">
+                <label for="nitRucEmpresa" th:text="#{configuracion.nitRucEmpresa}">NIT/RUC de la Empresa:</label>
+                <input type="text" id="nitRucEmpresa" th:field="*{nitRucEmpresa}" />
+                <span th:if="${#fields.hasErrors('nitRucEmpresa')}" th:errors="*{nitRucEmpresa}" class="error-field"></span>
+            </div>
+
+            <div class="form-group">
+                <label for="direccion" th:text="#{configuracion.direccion}">Dirección:</label>
+                <input type="text" id="direccion" th:field="*{direccion}" />
+                <span th:if="${#fields.hasErrors('direccion')}" th:errors="*{direccion}" class="error-field"></span>
+            </div>
+
+            <div class="form-group">
+                <label for="telefono" th:text="#{configuracion.telefono}">Teléfono:</label>
+                <input type="text" id="telefono" th:field="*{telefono}" />
+                <span th:if="${#fields.hasErrors('telefono')}" th:errors="*{telefono}" class="error-field"></span>
+            </div>
+
+            <div class="form-group">
+                <label for="emailContacto" th:text="#{configuracion.emailContacto}">Email de Contacto:</label>
+                <input type="email" id="emailContacto" th:field="*{emailContacto}" />
+                <span th:if="${#fields.hasErrors('emailContacto')}" th:errors="*{emailContacto}" class="error-field"></span>
+            </div>
+
+            <div class="form-group">
+                <label for="ivaPorDefecto" th:text="#{configuracion.ivaPorDefecto}">IVA por Defecto (%):</label>
+                <input type="number" step="0.01" id="ivaPorDefecto" th:field="*{ivaPorDefecto}" placeholder="Ej: 19.00"/>
+                <span th:if="${#fields.hasErrors('ivaPorDefecto')}" th:errors="*{ivaPorDefecto}" class="error-field"></span>
+            </div>
+
+            <div class="form-group">
+                <label for="monedaPorDefecto" th:text="#{configuracion.monedaPorDefecto}">Moneda por Defecto:</label>
+                <select id="monedaPorDefecto" th:field="*{monedaPorDefecto}">
+                    <option value="" th:text="#{configuracion.seleccioneMoneda}">-- Seleccione --</option>
+                    <option value="USD" th:text="#{configuracion.monedaUSD}" th:selected="${configuracionSistema.monedaPorDefecto == 'USD'}">USD - Dólar</option>
+                    <option value="EUR" th:text="#{configuracion.monedaEUR}" th:selected="${configuracionSistema.monedaPorDefecto == 'EUR'}">EUR - Euro</option>
+                    <option value="COP" th:text="#{configuracion.monedaCOP}" th:selected="${configuracionSistema.monedaPorDefecto == 'COP'}">COP - Peso Colombiano</option>
+                    <option value="MXN" th:text="#{configuracion.monedaMXN}" th:selected="${configuracionSistema.monedaPorDefecto == 'MXN'}">MXN - Peso Mexicano</option>
+                    <!-- Agrega más monedas según necesites -->
+                </select>
+                <span th:if="${#fields.hasErrors('monedaPorDefecto')}" th:errors="*{monedaPorDefecto}" class="error-field"></span>
+            </div>
+
+            <div class="form-group">
+                <label for="idiomaPorDefecto" th:text="#{configuracion.idiomaPorDefecto}">Idioma por Defecto:</label>
+                <select id="idiomaPorDefecto" th:field="*{idiomaPorDefecto}">
+                    <option value="" th:text="#{configuracion.seleccioneIdioma}">-- Seleccione --</option>
+                    <option value="es" th:text="#{configuracion.idiomaEspañol}" th:selected="${configuracionSistema.idiomaPorDefecto == 'es'}">Español</option>
+                    <option value="en" th:text="#{configuracion.idiomaIngles}" th:selected="${configuracionSistema.idiomaPorDefecto == 'en'}">Inglés</option>
+                    <option value="fr" th:text="#{configuracion.idiomaFrances}" th:selected="${configuracionSistema.idiomaPorDefecto == 'fr'}">Francés</option>
+                    <!-- Agrega más idiomas según necesites -->
+                </select>
+                <span th:if="${#fields.hasErrors('idiomaPorDefecto')}" th:errors="*{idiomaPorDefecto}" class="error-field"></span>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary" th:text="#{configuracion.guardarCambios}">Guardar Cambios</button>
+                <a th:href="@{/dashboard}" class="btn btn-secondary" th:text="#{configuracion.volverDashboard}">Volver al Dashboard</a>
+            </div>
+        </form>
+    </div>
+</body>
+</html>

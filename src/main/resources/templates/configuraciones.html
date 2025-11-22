@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layouts/admin-layout :: admin-layout(pageTitle='Configuración del Sistema', content=~{::main})}">
+
+<main role="main">
+    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <strong th:text="${successMessage}"></strong>
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+    </div>
+    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <strong th:text="${errorMessage}"></strong>
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+    </div>
+
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 text-primary"><i class="fas fa-cogs"></i> Configuración del Sistema</h5>
+            <a href="#" id="editButton" class="btn btn-primary btn-sm"><i class="fas fa-pencil-alt"></i> Editar Configuración</a>
+        </div>
+        <div class="card-body">
+            <form id="configForm" class="view-mode" th:action="@{/configuraciones/guardar}" th:object="${configuracion}" method="post">
+                <input type="hidden" th:field="*{id}" />
+
+                <div class="form-group row"><label class="col-sm-4 col-form-label font-weight-bold">Nombre de la Empresa:</label><div class="col-sm-8"><p class="form-control-static" th:text="*{nombreEmpresa}"></p><input type="text" class="form-control" th:field="*{nombreEmpresa}" /></div></div>
+                
+                <div class="form-group row"><label class="col-sm-4 col-form-label font-weight-bold">NIT / RUC:</label><div class="col-sm-8"><p class="form-control-static" th:text="*{nitRucEmpresa}"></p><input type="text" class="form-control" th:field="*{nitRucEmpresa}" /></div></div>
+                
+                <div class="form-group row"><label class="col-sm-4 col-form-label font-weight-bold">Dirección Principal:</label><div class="col-sm-8"><p class="form-control-static" th:text="*{direccion}"></p><input type="text" class="form-control" th:field="*{direccion}" /></div></div>
+                
+                <div class="form-group row"><label class="col-sm-4 col-form-label font-weight-bold">Teléfono de Contacto:</label><div class="col-sm-8"><p class="form-control-static" th:text="*{telefono}"></p><input type="text" class="form-control" th:field="*{telefono}" /></div></div>
+                
+                <div class="form-group row"><label class="col-sm-4 col-form-label font-weight-bold">Email de Contacto:</label><div class="col-sm-8"><p class="form-control-static" th:text="*{emailContacto}"></p><input type="email" class="form-control" th:field="*{emailContacto}" /></div></div>
+                
+                <div class="form-group row"><label class="col-sm-4 col-form-label font-weight-bold">Porcentaje de IVA (%):</label><div class="col-sm-8"><p class="form-control-static" th:text="|*{#numbers.formatDecimal(ivaPorDefecto, 1, 2)}%|"></p><input type="number" step="0.01" class="form-control" th:field="*{ivaPorDefecto}" /></div></div>
+                
+                <div class="form-group row">
+                    <label class="col-sm-4 col-form-label font-weight-bold">Moneda por Defecto:</label>
+                    <div class="col-sm-8">
+                        <p class="form-control-static" th:text="*{monedaPorDefecto}"></p>
+                        <select class="form-control" th:field="*{monedaPorDefecto}">
+                            <option value="COP">Peso Colombiano (COP)</option>
+                            <option value="USD">Dólar Americano (USD)</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-group row"><label class="col-sm-4 col-form-label font-weight-bold">Idioma por Defecto:</label><div class="col-sm-8"><p class="form-control-static" th:text="${idiomasDisponibles[configuracion.idiomaPorDefecto] ?: 'No configurado'}"></p><select class="form-control" th:field="*{idiomaPorDefecto}"><option th:each="idioma : ${idiomasDisponibles}" th:value="${idioma.key}" th:text="${idioma.value}"></option></select></div></div>
+                
+                <div class="form-group row"><label class="col-sm-4 col-form-label font-weight-bold">Logo de la Empresa:</label><div class="col-sm-8"><p class="form-control-static" th:text="*{urlLogo == null || urlLogo.isEmpty()} ? 'Logo no configurado' : 'Logo configurado'"></p><input type="text" class="form-control" th:field="*{urlLogo}" placeholder="URL de la imagen del logo" /></div></div>
+                
+                <div class="text-right mt-4"><button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Guardar Cambios</button></div>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        document.getElementById('editButton').addEventListener('click', function(event) {
+            event.preventDefault();
+            var form = document.getElementById('configForm');
+            if (form.classList.contains('view-mode')) {
+                form.classList.remove('view-mode'); form.classList.add('edit-mode');
+                this.innerHTML = '<i class="fas fa-times"></i> Cancelar'; this.classList.remove('btn-primary'); this.classList.add('btn-danger');
+            } else {
+                form.classList.remove('edit-mode'); form.classList.add('view-mode');
+                this.innerHTML = '<i class="fas fa-pencil-alt"></i> Editar Configuración'; this.classList.remove('btn-danger'); this.classList.add('btn-primary');
+            }
+        });
+        // Inline CSS for the view/edit mode logic
+        var style = document.createElement('style');
+        style.innerHTML = '.view-mode .form-control, .view-mode .btn-success { display: none; } .edit-mode .form-control-static { display: none; }';
+        document.head.appendChild(style);
+    </script>
+</main>
+</html>

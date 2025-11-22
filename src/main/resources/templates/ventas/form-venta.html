@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{layouts/admin-layout :: admin-layout(pageTitle=${pageTitle}, content=~{::content})}">
+<head>
+    <title th:text="${pageTitle ?: 'Registrar Nueva Venta'}">Registrar Nueva Venta</title>
+</head>
+<body>
+<th:block th:fragment="content">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800" th:text="${pageTitle}">Registrar Nueva Venta</h1>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-cash-register mr-2"></i>Datos de la Venta
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <form th:action="@{/ventas/guardar}" th:object="${venta}" method="post" id="formVenta">
+                        <div th:if="${#fields.hasGlobalErrors()}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <strong><i class="fas fa-exclamation-triangle mr-2"></i>Error:</strong>
+                            <ul>
+                                <li th:each="err : ${#fields.globalErrors()}" th:text="${err}"></li>
+                            </ul>
+                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                         <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <i class="fas fa-exclamation-triangle mr-2"></i> <span th:text="${errorMessage}"></span>
+                            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        </div>
+
+                        <div class="form-group row mb-3">
+                            <label for="clienteId" class="col-sm-3 col-lg-2 col-form-label">Cliente:</label>
+                            <div class="col-sm-9 col-lg-10">
+                                <select name="clienteId" id="clienteId" class="form-control" th:errorclass="is-invalid" required>
+                                    <option value="">Seleccione un cliente...</option>
+                                    <option th:each="cliente : ${clientes}"
+                                            th:value="${cliente.id}"
+                                            th:text="${cliente.nombre + ' ' + (cliente.apellido ?: '') + ' (' + cliente.numeroDocumento + ')'}"
+                                            th:selected="${venta.clienteId == cliente.id}">
+                                    </option>
+                                </select>
+                                <div th:if="${#fields.hasErrors('clienteId')}" th:errors="*{clienteId}" class="invalid-feedback d-block"></div>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+                        <h6 class="mb-3 font-weight-bold text-primary">Detalles de Productos:</h6>
+
+                        <div class="form-row mb-2 d-none d-md-flex font-weight-bold text-muted small">
+                            <div class="col-md-5"><label>Producto</label></div>
+                            <div class="col-md-2 text-center"><label>Cantidad</label></div>
+                            <div class="col-md-2 text-right"><label>Precio Unit.</label></div>
+                            <div class="col-md-2 text-right"><label>Subtotal</label></div>
+                            <div class="col-md-1"></div>
+                        </div>
+
+                        <div id="detallesContainer">
+                            <th:block th:if="${venta.detalles != null and !venta.detalles.isEmpty()}">
+                                <th:block th:each="detalleItem, iterStat : ${venta.detalles}">
+                                     <div class="form-row align-items-center mb-3 detalle-row p-2 border rounded bg-light">
+                                        <input type="hidden" th:name="|detalles[${iterStat.index}].nombreProducto|" th:id="|detalles[${iterStat.index}].nombreProducto|" th:value="${detalleItem?.nombreProducto}"/>
+                                        <div class="col-12 col-md-5 form-group mb-2 mb-md-0">
+                                            <label class="d-md-none small">Producto:</label>
+                                            <select th:name="|detalles[${iterStat.index}].productoId|" class="form-control form-control-sm producto-select" th:errorclass="is-invalid"
+                                                    th:attr="data-detalle-index=${iterStat.index}"
+                                                    onchange="actualizarInfoProducto(this)" required>
+                                                <option value="">Seleccione producto...</option>
+                                                <option th:each="prod : ${productos}"
+                                                        th:value="${prod.id}"
+                                                        th:text="${prod.nombre + ' (Stock: ' + prod.stock + ')'}"
+                                                        th:attr="data-precio=${prod.precio}, data-nombre=${prod.nombre}"
+                                                        th:selected="${detalleItem?.productoId == prod.id}">
+                                                </option>
+                                            </select>
+                                        </div>
+                                        <div class="col-6 col-md-2 form-group mb-2 mb-md-0">
+                                             <label class="d-md-none small">Cantidad:</label>
+                                            <input type="number" th:name="|detalles[${iterStat.index}].cantidad|" class="form-control form-control-sm cantidad-input text-center" placeholder="Cant." min="1"
+                                                   th:value="${detalleItem?.cantidad ?: 1}" oninput="calcularSubtotalFila(this)" th:errorclass="is-invalid" required/>
+                                        </div>
+                                        <div class="col-6 col-md-2 form-group mb-2 mb-md-0">
+                                             <label class="d-md-none small">Precio U.:</label>
+                                            <input type="text" th:name="|detalles[${iterStat.index}].precioUnitario|" class="form-control form-control-sm precio-unitario-input text-right" placeholder="Precio U."
+                                                   th:value="${#numbers.formatDecimal(detalleItem?.precioUnitario,1,2,'COMMA')}" readonly />
+                                        </div>
+                                        <div class="col-10 col-md-2 form-group mb-0">
+                                             <label class="d-md-none small">Subtotal:</label>
+                                            <input type="text" th:name="|detalles[${iterStat.index}].subtotal|" class="form-control form-control-sm subtotal-input text-right" placeholder="Subtotal"
+                                                   th:value="${#numbers.formatDecimal(detalleItem?.subtotal,1,2,'COMMA')}" readonly />
+                                        </div>
+                                        <div class="col-2 col-md-1 text-right align-self-center">
+                                            <button type="button" class="btn btn-sm btn-outline-danger remove-detalle-btn" onclick="eliminarFilaDetalle(this)" title="Eliminar producto">&times;</button>
+                                        </div>
+                                    </div>
+                                </th:block>
+                            </th:block>
+                        </div>
+                        <button type="button" id="addDetalleBtn" class="btn btn-sm btn-outline-primary mt-2 mb-3">
+                            <i class="fas fa-plus"></i> Añadir Producto
+                        </button>
+                        <div th:if="${#fields.hasErrors('detalles')}" class="alert alert-danger mt-2 py-2" role="alert">
+                            <ul class="mb-0 pl-3">
+                                <li th:each="err : ${#fields.errors('detalles')}" th:text="${err}"></li>
+                            </ul>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <div class="form-group row mt-4 justify-content-end">
+                            <label for="totalVenta" class="col-sm-auto col-form-label font-weight-bold h5 text-primary">TOTAL VENTA:</label>
+                            <div class="col-sm-4">
+                                <input type="text" th:field="*{totalVenta}" class="form-control form-control-lg font-weight-bold text-right bg-white border-0 h5 text-primary" id="totalVenta" readonly />
+                            </div>
+                        </div>
+
+                        <div class="form-row mt-3">
+                            <div class="form-group col-md-6">
+                                <label for="metodoPago" class="form-label">Método de Pago:</label>
+                                <select th:field="*{metodoPago}" class="form-control" id="metodoPago" required>
+                                    <option value="">Seleccione...</option>
+                                    <option value="EFECTIVO">Efectivo</option>
+                                    <option value="TARJETA_CREDITO">Tarjeta de Crédito</option>
+                                    <option value="TARJETA_DEBITO">Tarjeta de Débito</option>
+                                    <option value="TRANSFERENCIA">Transferencia Bancaria</option>
+                                    <option value="NEQUI">Nequi</option>
+                                    <option value="DAVIPLATA">Daviplata</option>
+                                    <option value="OTRO">Otro</option>
+                                </select>
+                                <div th:if="${#fields.hasErrors('metodoPago')}" th:errors="*{metodoPago}" class="invalid-feedback d-block"></div>
+                            </div>
+                             <div class="form-group col-md-6">
+                                <label for="estado" class="form-label">Estado Venta:</label>
+                                <select th:field="*{estado}" class="form-control" id="estado" required>
+                                    <option value="PENDIENTE">Pendiente</option>
+                                    <option value="COMPLETADA">Completada</option>
+                                    <option value="CANCELADA">Cancelada</option>
+                                </select>
+                                <div th:if="${#fields.hasErrors('estado')}" th:errors="*{estado}" class="invalid-feedback d-block"></div>
+                            </div>
+                        </div>
+
+                        <div class="form-group mb-4">
+                            <label for="notas" class="form-label">Notas Adicionales:</label>
+                            <textarea th:field="*{notas}" class="form-control" id="notas" rows="3" placeholder="Observaciones sobre la venta..."></textarea>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <div class="d-flex justify-content-end">
+                            <a th:href="@{/ventas}" class="btn btn-outline-secondary mr-2">
+                                <i class="fas fa-times mr-1"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-check-circle mr-1"></i> Registrar Venta
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script th:inline="javascript">
+/*<![CDATA[*/
+    let detalleIndex = /*[[${venta.detalles != null ? venta.detalles.size() : 0}]]*/ 0;
+    const productosDisponibles = /*[[${productos}]]*/ [];
+
+    document.addEventListener('DOMContentLoaded', function() {
+        if (document.querySelectorAll('.detalle-row').length === 0 && detalleIndex === 0) {
+            agregarFilaDetalle(); 
+        } else {
+            document.querySelectorAll('.producto-select').forEach(select => {
+                select.addEventListener('change', function() { actualizarInfoProducto(this); });
+                if (select.value) { 
+                    actualizarInfoProducto(select, false); 
+                }
+            });
+            document.querySelectorAll('.cantidad-input').forEach(input => {
+                input.addEventListener('input', function() { calcularSubtotalFila(this); });
+                if(input.value && input.closest('.detalle-row').querySelector('.precio-unitario-input').value){
+                    calcularSubtotalFila(input);
+                }
+            });
+        }
+
+        document.getElementById('addDetalleBtn').addEventListener('click', agregarFilaDetalle);
+        calcularTotalGeneral();
+    });
+
+    function agregarFilaDetalle() {
+        const container = document.getElementById('detallesContainer');
+        const newRow = document.createElement('div');
+        newRow.classList.add('form-row', 'align-items-center', 'mb-3', 'detalle-row', 'p-2', 'border', 'rounded', 'bg-light');
+        
+        let optionsHtml = '<option value="">Seleccione producto...</option>';
+        productosDisponibles.forEach(prod => {
+            optionsHtml += `<option value="${prod.id}" data-precio="${prod.precio}" data-nombre="${prod.nombre}">${prod.nombre} (Stock: ${prod.stock})</option>`;
+        });
+
+        newRow.innerHTML = `
+            <input type="hidden" name="detalles[${detalleIndex}].nombreProducto" id="detalles[${detalleIndex}].nombreProducto" />
+            <div class="col-12 col-md-5 form-group mb-2 mb-md-0">
+                <label class="d-md-none small">Producto:</label>
+                <select name="detalles[${detalleIndex}].productoId" class="form-control form-control-sm producto-select" data-detalle-index="${detalleIndex}" onchange="actualizarInfoProducto(this)" required>
+                    ${optionsHtml}
+                </select>
+            </div>
+            <div class="col-6 col-md-2 form-group mb-2 mb-md-0">
+                <label class="d-md-none small">Cantidad:</label>
+                <input type="number" name="detalles[${detalleIndex}].cantidad" class="form-control form-control-sm cantidad-input text-center" placeholder="Cant." value="1" min="1" oninput="calcularSubtotalFila(this)" required/>
+            </div>
+            <div class="col-6 col-md-2 form-group mb-2 mb-md-0">
+                <label class="d-md-none small">Precio U.:</label>
+                <input type="text" name="detalles[${detalleIndex}].precioUnitario" class="form-control form-control-sm precio-unitario-input text-right" placeholder="Precio U." readonly />
+            </div>
+            <div class="col-10 col-md-2 form-group mb-0">
+                <label class="d-md-none small">Subtotal:</label>
+                <input type="text" name="detalles[${detalleIndex}].subtotal" class="form-control form-control-sm subtotal-input text-right" placeholder="Subtotal" readonly />
+            </div>
+            <div class="col-2 col-md-1 text-right align-self-center">
+                <button type="button" class="btn btn-sm btn-outline-danger remove-detalle-btn" onclick="eliminarFilaDetalle(this)" title="Eliminar producto">&times;</button>
+            </div>
+        `;
+        container.appendChild(newRow);
+        detalleIndex++;
+    }
+
+    function actualizarInfoProducto(selectElement, resetQuantity = true) {
+        const selectedOption = selectElement.options[selectElement.selectedIndex];
+        const row = selectElement.closest('.detalle-row');
+        const precioUnitarioInput = row.querySelector('.precio-unitario-input');
+        const nombreProductoInput = row.querySelector('input[name$=".nombreProducto"]');
+        const cantidadInput = row.querySelector('.cantidad-input');
+
+        if (selectedOption && selectedOption.value) {
+            const precio = parseFloat(selectedOption.dataset.precio || '0.00');
+            precioUnitarioInput.value = precio.toFixed(2);
+            nombreProductoInput.value = selectedOption.dataset.nombre || '';
+            if (resetQuantity) {
+                 cantidadInput.value = '1';
+            }
+        } else {
+            precioUnitarioInput.value = '0.00';
+            nombreProductoInput.value = '';
+            if (resetQuantity) {
+                cantidadInput.value = '1';
+            }
+        }
+        calcularSubtotalFila(selectElement);
+    }
+
+    function calcularSubtotalFila(elementInRow) {
+        const row = elementInRow.closest('.detalle-row');
+        const cantidadInput = row.querySelector('.cantidad-input');
+        const precioUnitarioInput = row.querySelector('.precio-unitario-input');
+        const subtotalInput = row.querySelector('.subtotal-input');
+
+        let cantidad = parseInt(cantidadInput.value);
+        if (isNaN(cantidad) || cantidad < 1) {
+            if (cantidadInput.value === "" && document.activeElement !== cantidadInput) {
+                subtotalInput.value = "0.00";
+                calcularTotalGeneral();
+                return;
+            }
+            cantidad = 1; 
+            if (document.activeElement !== cantidadInput || cantidadInput.value === "0") {
+                 cantidadInput.value = 1;
+            }
+        }
+        
+        const precioUnitario = parseFloat(precioUnitarioInput.value) || 0.0;
+        const subtotal = cantidad * precioUnitario;
+        subtotalInput.value = subtotal.toFixed(2);
+        calcularTotalGeneral();
+    }
+
+    function calcularTotalGeneral() {
+        let totalGeneral = 0;
+        document.querySelectorAll('.subtotal-input').forEach(input => {
+            totalGeneral += parseFloat(input.value) || 0.0;
+        });
+        const totalVentaInput = document.getElementById('totalVenta');
+        totalVentaInput.value = totalGeneral.toFixed(2);
+    }
+    
+    function eliminarFilaDetalle(button) {
+        const row = button.closest('.detalle-row');
+        if (document.querySelectorAll('.detalle-row').length > 1) {
+            row.remove();
+        } else {
+            const selectProducto = row.querySelector('.producto-select');
+            selectProducto.value = '';
+            row.querySelector('.cantidad-input').value = '1';
+            actualizarInfoProducto(selectProducto);
+        }
+        calcularTotalGeneral();
+    }
+/*]]>*/
+</script>
+</th:block>
+</body>
+</html>

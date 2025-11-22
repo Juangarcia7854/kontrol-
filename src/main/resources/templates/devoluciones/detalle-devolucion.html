@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{layouts/admin-layout :: admin-layout(pageTitle=${pageTitle}, content=~{::content})}">
+      <head>
+    <title th:text="${pageTitle ?: 'Detalle de Devolución'}">Detalle de Devolución</title>
+    <style>
+        @media print {
+            body * { visibility: hidden; }
+            #printableArea, #printableArea * { visibility: visible; }
+            #printableArea { position: absolute; left: 0; top: 0; width: 100%; }
+            .no-print { display: none !important; }
+            .card { box-shadow: none !important; border: 1px solid #ccc !important; }
+        }
+    </style>
+</head>
+<body>
+<th:block th:fragment="content">
+    <div class="d-flex justify-content-between align-items-center mb-4 no-print">
+        <h1 class="h3 mb-0 text-gray-800" th:text="${pageTitle}">Detalle de Devolución</h1>
+        <div>
+            <button type="button" onclick="window.print();" class="btn btn-info btn-icon-split mr-2">
+                <span class="icon text-white-50"><i class="fas fa-print"></i></span>
+                <span class="text">Imprimir</span>
+            </button>
+            <a th:href="@{/devoluciones}" class="btn btn-outline-secondary btn-icon-split">
+                <span class="icon text-gray-600"><i class="fas fa-arrow-left"></i></span>
+                <span class="text">Volver al Historial</span>
+            </a>
+        </div>
+    </div>
+
+    <div id="printableArea">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                 <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-receipt mr-2"></i>ID Devolución: <span th:text="${devolucion?.id}"></span>
+                 </h6>
+            </div>
+            <div class="card-body" th:if="${devolucion}">
+                <div class="row mb-4">
+                    <div class="col-md-6 mb-3 mb-md-0">
+                        <h5 class="mb-3">Datos de la Devolución:</h5>
+                        <p class="mb-1"><strong>Factura Original:</strong>
+                            <a th:href="@{/ventas/{id}(id=${devolucion.ventaOriginalId})}" th:text="${devolucion.numeroFacturaVentaOriginal}"></a>
+                        </p>
+                        <p class="mb-1"><strong>Fecha Devolución:</strong> <span th:text="${#temporals.format(devolucion.fechaDevolucion, 'dd/MM/yyyy HH:mm:ss')}"></span></p>
+                        <p class="mb-1"><strong>Cliente:</strong> <span th:text="${devolucion.nombreCliente}"></span></p>
+                    </div>
+                    <div class="col-md-6 text-md-right">
+                        <h5 class="mb-3">Estado y Reembolso:</h5>
+                        <p class="mb-1"><strong>Procesado por:</strong> <span th:text="${devolucion.usernameUsuario}"></span></p>
+                        <p class="mb-1"><strong>Estado:</strong>
+                            <span th:text="${devolucion.estadoDevolucion}"
+                                  th:classappend="${#strings.equals(devolucion.estadoDevolucion, 'COMPLETADA') ? 'badge-success' : (#strings.equals(devolucion.estadoDevolucion, 'PROCESADA') ? 'badge-primary' : 'badge-warning')}"
+                                  class="badge px-2 py-1" style="font-size: 0.9rem;">
+                            </span>
+                        </p>
+                        <p class="mb-1"><strong>Tipo Reembolso:</strong> <span th:text="${devolucion.tipoReembolso ?: '-'}"></span></p>
+                        <p class="mb-0"><strong>Monto Reembolsado:</strong> <span th:text="${devolucion.montoReembolsado != null ? #numbers.formatCurrency(devolucion.montoReembolsado) : '-'}"></span></p>
+                    </div>
+                </div>
+
+                <h6 class="mt-4 mb-3 font-weight-bold text-primary">Productos Devueltos:</h6>
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead class="thead-light">
+                            <tr>
+                                <th>Producto</th>
+                                <th class="text-center">Cantidad Devuelta</th>
+                                <th class="text-right">Precio Unit. (Devolución)</th>
+                                <th class="text-right">Subtotal Devolución</th>
+                                <th>Motivo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="detalle : ${devolucion.detalles}">
+                                <td th:text="${detalle.nombreProducto}"></td>
+                                <td class="text-center" th:text="${detalle.cantidadDevuelta}"></td>
+                                <td class="text-right" th:text="${#numbers.formatCurrency(detalle.precioUnitarioDevolucion)}"></td>
+                                <td class="text-right" th:text="${#numbers.formatCurrency(detalle.subtotalDevolucion)}"></td>
+                                <td th:text="${detalle.motivoDevolucion ?: '-'}"></td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr class="bg-primary text-white">
+                                <td colspan="4" class="text-right font-weight-bold h5 border-top-0">TOTAL DEVOLUCIÓN:</td>
+                                <td class="text-right font-weight-bold h5 border-top-0" th:text="${#numbers.formatCurrency(devolucion.totalDevolucion)}"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                <div th:if="${devolucion.notas}" class="mt-4">
+                    <strong>Notas Adicionales:</strong>
+                    <p class="text-muted" th:text="${devolucion.notas}"></p>
+                </div>
+
+                <div class="row mt-5 pt-5 d-none d-print-block">
+                    <div class="col-6 text-center">
+                        <hr style="width: 60%; border-top: 1px solid #000;">
+                        <p class="mb-0">Recibido por (Almacén)</p>
+                    </div>
+                    <div class="col-6 text-center">
+                        <hr style="width: 60%; border-top: 1px solid #000;">
+                        <p class="mb-0">Autorizado por (Administración)</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body text-center" th:unless="${devolucion}">
+                <i class="fas fa-exclamation-triangle fa-3x text-danger mb-3"></i>
+                <p class="text-danger h5">No se encontró la información de la devolución.</p>
+            </div>
+        </div> </div> </th:block>
+</body>
+</html>

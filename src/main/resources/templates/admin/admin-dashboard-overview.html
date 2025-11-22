@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{layouts/admin-layout :: admin-layout(pageTitle=#{dashboard.titulo}, content=~{::content})}">
+
+<body>
+<th:block th:fragment="content">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">¡Bienvenido, <span sec:authentication="name" class="font-weight-bold">Usuario</span>!</h1>
+    </div>
+
+    <div class="row">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2"><div class="card-body"><div class="row no-gutters align-items-center"><div class="col mr-2"><div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Ingresos (Hoy)</div><div id="ingresos-hoy" class="h5 mb-0 font-weight-bold text-gray-800">$0.00</div></div><div class="col-auto"><i class="fas fa-dollar-sign fa-2x text-gray-300"></i></div></div></div></div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2"><div class="card-body"><div class="row no-gutters align-items-center"><div class="col mr-2"><div class="text-xs font-weight-bold text-success text-uppercase mb-1">Nº de Ventas (Hoy)</div><div id="ventas-hoy" class="h5 mb-0 font-weight-bold text-gray-800">0</div></div><div class="col-auto"><i class="fas fa-shopping-cart fa-2x text-gray-300"></i></div></div></div></div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2"><div class="card-body"><div class="row no-gutters align-items-center"><div class="col mr-2"><div class="text-xs font-weight-bold text-info text-uppercase mb-1">Ticket Promedio (Hoy)</div><div id="ticket-promedio" class="h5 mb-0 font-weight-bold text-gray-800">$0.00</div></div><div class="col-auto"><i class="fas fa-clipboard-list fa-2x text-gray-300"></i></div></div></div></div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card shadow h-100"><div class="card-header py-3"><h6 class="m-0 font-weight-bold text-primary">Top 5 Productos (Hoy)</h6></div><div class="card-body p-2"><ol id="ranking-productos" class="list-group list-group-flush"></ol></div></div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-xl-8 col-lg-7">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Ventas Netas</h6>
+                    <div class="btn-group btn-group-sm" role="group" id="periodo-ventas-selector">
+                        <button type="button" class="btn btn-outline-primary active" data-periodo="semana">7 Días</button>
+                        <button type="button" class="btn btn-outline-primary" data-periodo="hoy">Hoy</button>
+                        <button type="button" class="btn btn-outline-primary" data-periodo="mes">Este Mes</button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="chart-area" style="height: 320px;">
+                        <canvas id="graficoVentasSemanales"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4 col-lg-5">
+            <div class="card shadow mb-4"><div class="card-header py-3"><h6 class="m-0 font-weight-bold text-primary">Top 5 Productos (Histórico)</h6></div><div class="card-body"><div class="chart-pie" style="height: 320px;"><canvas id="graficoTopProductos"></canvas></div></div></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1.5.1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+
+    <script th:inline="javascript">
+    document.addEventListener("DOMContentLoaded", function() {
+
+        function mostrarMensajeEnCanvas(canvas, mensaje) {
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.font = "16px 'Nunito', sans-serif";
+            ctx.fillStyle = '#858796';
+            ctx.textAlign = "center";
+            ctx.fillText(mensaje, canvas.offsetWidth / 2, canvas.offsetHeight / 2);
+        }
+
+        // --- LÓGICA GRÁFICA TOP PRODUCTOS (SE MANTIENE IGUAL) ---
+        const canvasProductos = document.getElementById('graficoTopProductos');
+        const labelsProductos = /*[[${nombresTopProductos}]]*/ null;
+        const dataProductos = /*[[${cantidadesTopProductos}]]*/ null;
+
+        if (canvasProductos && labelsProductos && labelsProductos.length > 0) {
+            new Chart(canvasProductos.getContext('2d'), {
+                type: 'doughnut', data: { labels: labelsProductos, datasets: [{ data: dataProductos, backgroundColor: ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b'], }] },
+                options: { maintainAspectRatio: false, responsive: true, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } } }
+            });
+        } else if (canvasProductos) {
+            mostrarMensajeEnCanvas(canvasProductos, "No hay productos vendidos.");
+        }
+
+        // --- LÓGICA PARA LA GRÁFICA DE VENTAS DINÁMICA ---
+        const monedaSimbolo = /*[[${monedaSimbolo}]]*/ '$';
+        const canvasVentas = document.getElementById('graficoVentasSemanales');
+        const ctxVentas = canvasVentas.getContext('2d');
+        
+        const graficoVentas = new Chart(ctxVentas, {
+            type: 'line',
+            data: { labels: [], datasets: [{ label: "Ventas", data: [], backgroundColor: "rgba(78, 115, 223, 0.05)", borderColor: "rgba(78, 115, 223, 1)", tension: 0.3 }] },
+            options: { maintainAspectRatio: false, responsive: true, scales: { y: { ticks: { callback: function(value) { return monedaSimbolo + ' ' + value.toLocaleString(); } } } }, plugins: { legend: { display: false } } }
+        });
+
+        // ✅ Función corregida para usar GET
+        async function actualizarGraficaVentas(periodo) {
+            try {
+                const url = new URL(`[(@{/api/dashboard/ventas-netas})]`, window.location.origin);
+                url.searchParams.append('periodo', periodo);
+
+                const response = await fetch(url); // El método por defecto es GET
+                
+                if (!response.ok) {
+                    throw new Error('La respuesta del servidor no fue OK');
+                }
+                const chartData = await response.json();
+
+                graficoVentas.data.labels = chartData.labels;
+                graficoVentas.data.datasets[0].data = chartData.data;
+                graficoVentas.update();
+
+            } catch (error) {
+                console.error(`Error al actualizar la gráfica de ventas para el periodo '${periodo}':`, error);
+                mostrarMensajeEnCanvas(canvasVentas, "Error al cargar los datos.");
+            }
+        }
+
+        const selectorPeriodo = document.getElementById('periodo-ventas-selector');
+        selectorPeriodo.addEventListener('click', function(e) {
+            if (e.target.tagName === 'BUTTON' && !e.target.classList.contains('active')) {
+                selectorPeriodo.querySelector('.active').classList.remove('active');
+                e.target.classList.add('active');
+                actualizarGraficaVentas(e.target.dataset.periodo);
+            }
+        });
+
+        actualizarGraficaVentas('semana');
+
+        // --- LÓGICA PARA EL DASHBOARD EN TIEMPO REAL (SE MANTIENE IGUAL) ---
+        const locale = /*[[${#strings.replace(#locale.toString(), '_', '-')}]]*/ 'es-CO';
+        const currencyFormatter = new Intl.NumberFormat(locale, { style: 'currency', currency: 'COP' });
+
+        const ingresosEl = document.getElementById('ingresos-hoy');
+        const ventasEl = document.getElementById('ventas-hoy');
+        const ticketEl = document.getElementById('ticket-promedio');
+        const rankingEl = document.getElementById('ranking-productos');
+
+        function actualizarDashboard(datos) {
+            ingresosEl.textContent = currencyFormatter.format(datos.ingresosHoy || 0);
+            ventasEl.textContent = datos.numeroVentasHoy || 0;
+            ticketEl.textContent = currencyFormatter.format(datos.ticketPromedio || 0);
+            rankingEl.innerHTML = '';
+            if (datos.rankingProductos && datos.rankingProductos.length > 0) {
+                datos.rankingProductos.forEach(p => {
+                    const li = document.createElement('li');
+                    li.className = 'list-group-item d-flex justify-content-between align-items-center py-2';
+                    li.style.fontSize = '0.8rem';
+                    li.innerHTML = `${p.nombreProducto} <span class="badge badge-primary badge-pill">${p.cantidadVendida}</span>`;
+                    rankingEl.appendChild(li);
+                });
+            } else {
+                rankingEl.innerHTML = '<li class="list-group-item text-muted">Aún no hay datos...</li>';
+            }
+        }
+
+        fetch('[(@{/api/dashboard/metrics})]')
+            .then(response => response.json())
+            .then(actualizarDashboard)
+            .catch(error => console.error('Error al cargar datos iniciales del dashboard:', error));
+
+        function conectarWebSocket() {
+            const socket = new SockJS('[(@{/ws})]');
+            const stompClient = Stomp.over(socket);
+            stompClient.debug = null;
+            stompClient.connect({}, (frame) => {
+                console.log('Conectado al Dashboard en Tiempo Real: ' + frame);
+                stompClient.subscribe('/topic/dashboard', (message) => {
+                    actualizarDashboard(JSON.parse(message.body));
+                });
+            }, (error) => {
+                console.error('Error WebSocket, reintentando en 5s:', error);
+                setTimeout(conectarWebSocket, 5000);
+            });
+        }
+        conectarWebSocket();
+    });
+    </script>
+</th:block>
+</body>
+</html>

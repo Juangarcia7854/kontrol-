@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{layouts/admin-layout :: admin-layout(pageTitle=${pageTitle}, content=~{::content})}">
+      <head>
+    <title th:text="${pageTitle ?: 'Lista de Proveedores'}">Lista de Proveedores</title>
+</head>
+<body>
+<th:block th:fragment="content">
+    
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800" th:text="${pageTitle}">Lista de Proveedores</h1>
+        <a sec:authorize="hasAnyRole('ROLE_ADMIN', 'ROLE_GESTOR')" th:href="@{/proveedores/nuevo}" class="btn btn-primary btn-icon-split">
+            <span class="icon text-white-50"><i class="fas fa-plus mr-1"></i></span>
+            <span class="text">Nuevo Proveedor</span>
+        </a>
+    </div>
+
+    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="fas fa-check-circle mr-2"></i><span th:text="${successMessage}"></span>
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+    </div>
+    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="fas fa-exclamation-triangle mr-2"></i><span th:text="${errorMessage}"></span>
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold text-primary">Proveedores Registrados</h6>
+            
+            <form th:action="@{/proveedores}" method="get" class="d-none d-sm-inline-block form-inline mr-0 ml-md-3 my-2 my-md-0 navbar-search">
+                <div class="input-group">
+                    <input type="hidden" name="page" value="0">
+                    <input type="hidden" name="size" th:value="${pageSize}"> 
+                    <input type="text" name="term" th:value="${searchTerm}" class="form-control bg-light border-0 small" placeholder="Buscar por nombre, RUC/NIT, email..."
+                           aria-label="Search" aria-describedby="basic-addon2">
+                    <div class="input-group-append">
+                        <button class="btn btn-primary" type="submit">
+                            <i class="fas fa-search fa-sm"></i>
+                        </button>
+                    </div>
+                </div>
+            </form>
+            </div>
+        <div class="card-body">
+            <div th:if="${totalItems == 0}" class="text-center py-4"> 
+                <i class="fas fa-info-circle fa-2x text-muted mb-2 d-block"></i>
+                No hay proveedores activos que coincidan con la búsqueda.
+            </div>
+
+            <div th:unless="${totalItems == 0}" class="table-responsive">
+                <table class="table table-bordered table-hover" width="100%" cellspacing="0">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Contacto</th>
+                            <th>Email</th>
+                            <th>Teléfono</th>
+                            <th>RUC/NIT</th>
+                            <th class="text-center" sec:authorize="hasAnyRole('ROLE_ADMIN', 'ROLE_GESTOR')">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="proveedor : ${proveedores}">
+                            <td th:text="${proveedor.nombre}"></td>
+                            <td th:text="${proveedor.personaContacto ?: '-'}"></td>
+                            <td th:text="${proveedor.email ?: '-'}"></td>
+                            <td th:text="${proveedor.telefono ?: '-'}"></td>
+                            <td th:text="${proveedor.rucNit ?: '-'}"></td>
+                            <td class="text-center action-buttons" sec:authorize="hasAnyRole('ROLE_ADMIN', 'ROLE_GESTOR')">
+                                <a th:href="@{/proveedores/editar/{id}(id=${proveedor.id})}" 
+                                   class="btn btn-sm btn-warning mr-1" title="Editar">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                
+                                <form sec:authorize="hasRole('ROLE_ADMIN')"
+                                      th:action="@{/proveedores/desactivar/{id}(id=${proveedor.id})}" method="post"
+                                      class="d-inline"
+                                      onsubmit="return confirm('ATENCIÓN: ¿Estás seguro de que deseas DESACTIVAR este proveedor? Esto mantendrá su historial de compras en el sistema.');">
+                                    <button type="submit" class="btn btn-sm btn-danger" title="Desactivar">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div th:if="${totalPages > 0}" class="row mt-4">
+                <div class="col-sm-12 col-md-5">
+                    <div class="dataTables_info" role="status" aria-live="polite" th:text="|Mostrando ${totalItems} proveedores en ${totalPages} páginas.|"></div>
+                </div>
+                <div class="col-sm-12 col-md-7">
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination justify-content-end">
+                            <li th:class="${currentPage == 0 ? 'page-item disabled' : 'page-item'}">
+                                <a class="page-link" th:href="@{/proveedores(page=${currentPage - 1}, size=${pageSize}, term=${searchTerm})}" aria-label="Anterior">
+                                    <span aria-hidden="true">&laquo;</span>
+                                </a>
+                            </li>
+
+                            <li th:each="i : ${#numbers.sequence(0, totalPages - 1)}" 
+                                th:class="${currentPage == i ? 'page-item active' : 'page-item'}">
+                                <a class="page-link" th:href="@{/proveedores(page=${i}, size=${pageSize}, term=${searchTerm})}" th:text="${i + 1}"></a>
+                            </li>
+                            
+                            <li th:class="${currentPage + 1 == totalPages ? 'page-item disabled' : 'page-item'}">
+                                <a class="page-link" th:href="@{/proveedores(page=${currentPage + 1}, size=${pageSize}, term=${searchTerm})}" aria-label="Siguiente">
+                                    <span aria-hidden="true">&raquo;</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+            </div>
+    </div>
+</th:block>
+</body>
+</html>

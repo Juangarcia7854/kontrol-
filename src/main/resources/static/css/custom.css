@@ -1,0 +1,95 @@
+/* Estilos para las tarjetas del dashboard */
+.dashboard-card {
+    transition: transform .2s, box-shadow .2s; /* Efecto suave para hover */
+    height: 100%; /* Para que todas las tarjetas en una fila tengan la misma altura si están en la misma .row */
+    display: flex; /* Para permitir que el card-body se expanda */
+    flex-direction: column; /* Para que el card-body ocupe el espacio vertical */
+}
+
+.dashboard-card:hover {
+    transform: translateY(-5px); /* Eleva la tarjeta ligeramente en hover */
+    box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important; /* Sombra más pronunciada en hover */
+}
+
+.dashboard-card .card-body {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between; /* Espacio entre el contenido y el botón */
+    align-items: center;
+    text-align: center;
+    flex-grow: 1; /* Permite que el card-body se expanda para llenar la tarjeta */
+}
+
+.dashboard-card .card-title {
+    font-size: 1.1rem;
+    font-weight: 500;
+    margin-top: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.dashboard-card .card-text {
+    font-size: 0.85rem;
+    color: #6c757d; /* Un gris suave para la descripción */
+    flex-grow: 1; /* Permite que el texto ocupe espacio disponible */
+    margin-bottom: 1rem;
+}
+
+.dashboard-card i.icon-feature {
+    font-size: 2.5rem; /* Tamaño del icono principal de la tarjeta */
+    margin-bottom: 0.75rem;
+    /* El color base se puede definir aquí o individualmente */
+}
+
+/* Colores específicos para los iconos de cada tarjeta */
+/* Estos colores coinciden con las clases border-left-* de Bootstrap para consistencia */
+.icon-productos { color: #17a2b8 !important; } /* Color info de Bootstrap */
+.icon-proveedores { color: #ffc107 !important; } /* Color warning de Bootstrap */
+.icon-clientes { color: #28a745 !important; } /* Color success de Bootstrap */
+.icon-ventas { color: #6f42c1 !important; } /* Color púrpura personalizado */
+.icon-devoluciones { color: #fd7e14 !important; } /* Color naranja personalizado */
+.icon-usuarios { color: #dc3545 !important; } /* Color danger de Bootstrap */
+.icon-reportes { color: #007bff !important; } /* Color primary de Bootstrap */
+
+/* Clases de borde lateral personalizadas (Bootstrap tiene primary, secondary, success, etc.) */
+/* Si usas estas clases en las tarjetas, como <div class="card border-left-purple ..."> */
+.border-left-purple {
+    border-left: .25rem solid #6f42c1!important; /* Púrpura */
+}
+
+.border-left-orange {
+    border-left: .25rem solid #fd7e14!important; /* Naranja */
+}
+
+/* Clases de botones personalizadas (si las usas) */
+.btn-purple {
+    color: #fff;
+    background-color: #6f42c1;
+    border-color: #6f42c1;
+}
+.btn-purple:hover {
+    color: #fff;
+    background-color: #5a32a3; /* Un púrpura más oscuro para hover */
+    border-color: #532f91;
+}
+
+.btn-orange {
+    color: #fff;
+    background-color: #fd7e14;
+    border-color: #fd7e14;
+}
+.btn-orange:hover {
+    color: #fff;
+    background-color: #e66f00; /* Un naranja más oscuro para hover */
+    border-color: #d96800;
+}
+
+/* Ajuste para que el stretched-link funcione bien con el padding del card-body */
+.dashboard-card .stretched-link::after {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 1;
+    content: "";
+}

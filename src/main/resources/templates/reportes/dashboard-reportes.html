@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{layouts/admin-layout :: admin-layout(pageTitle=${pageTitle}, content=~{::content})}">
+<head>
+    <title th:text="${pageTitle ?: 'Dashboard de Reportes'}">Dashboard de Reportes</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <style>
+        .chart-card-body { min-height: 430px; display: flex; flex-direction: column; }
+        .chart-container { position: relative; flex-grow: 1; min-height: 250px; width: 100%; }
+        .no-data-message { display: flex; justify-content: center; align-items: center; height: 100%; min-height: 200px; text-align: center; color: #858796; }
+        .custom-legend .legend-item { display: inline-flex; align-items: center; margin-right: 15px; margin-bottom: 5px; font-size: 0.85rem; }
+        .custom-legend .legend-color-box { width: 12px; height: 12px; display: inline-block; margin-right: 5px; border-radius: 3px; }
+    </style>
+</head>
+<body>
+<th:block th:fragment="content">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800" th:text="${pageTitle ?: 'Dashboard de Reportes'}">Dashboard de Reportes</h1>
+        
+        <div class="mt-2">
+            <a th:href="@{/reportes/exportar/ventas-excel}" class="btn btn-success btn-sm shadow-sm">
+                <i class="fas fa-file-excel fa-sm text-white-50"></i> Exportar a Excel
+            </a>
+            <a th:href="@{/reportes/exportar/ventas-pdf}" class="btn btn-danger btn-sm shadow-sm">
+                <i class="fas fa-file-pdf fa-sm text-white-50"></i> Exportar a PDF
+            </a>
+        </div>
+        </div>
+
+    <div class="row">
+        <div class="col-lg-7 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-chart-line mr-2"></i>
+                        <span th:text="${tituloVentasDiarias ?: 'Ventas Diarias (Últimos 7 Días)'}">Ventas Diarias</span>
+                    </h6>
+                </div>
+                <div class="card-body chart-card-body">
+                    <div class="chart-container">
+                        <canvas id="ventasDiariasChart" style="display: none;"></canvas>
+                        <div id="noDataVentas" class="no-data-message">
+                            <div><i class="fas fa-spinner fa-spin fa-2x mb-2"></i><br/>Cargando datos de ventas...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-5 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-chart-pie mr-2"></i>
+                        <span th:text="${tituloTopProductos ?: 'Top Productos Más Vendidos'}">Top Productos</span>
+                    </h6>
+                </div>
+                <div class="card-body chart-card-body">
+                    <div class="chart-container">
+                        <canvas id="topProductosChart" style="display: none;"></canvas>
+                        <div id="noDataProductos" class="no-data-message">
+                            <div><i class="fas fa-spinner fa-spin fa-2x mb-2"></i><br/>Cargando datos de productos...</div>
+                        </div>
+                    </div>
+                    <div id="topProductosLegend" class="mt-3 text-center custom-legend"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script th:inline="javascript">
+    /*<![CDATA[*/
+        document.addEventListener('DOMContentLoaded', function() {
+            // --- GRÁFICA DE VENTAS DIARIAS ---
+            const labelsVentas = /*[[${labelsVentasDiarias}]]*/ null;
+            const dataVentas = /*[[${dataVentasDiarias}]]*/ null;
+            const canvasVentas = document.getElementById('ventasDiariasChart');
+            const noDataVentasDiv = document.getElementById('noDataVentas');
+
+            if (canvasVentas && labelsVentas && Array.isArray(labelsVentas) && labelsVentas.length > 0) {
+                noDataVentasDiv.style.display = 'none';
+                canvasVentas.style.display = 'block';
+                new Chart(canvasVentas.getContext('2d'), {
+                    type: 'line', data: { labels: labelsVentas, datasets: [{ label: 'Total Ventas ($)', data: dataVentas, borderColor: 'rgba(78, 115, 223, 1)', backgroundColor: 'rgba(78, 115, 223, 0.05)', fill: true, tension: 0.3 }] },
+                    options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { callback: function(value) { return '$' + value.toLocaleString('es-CO'); }}}}, plugins: { legend: { display: false } } }
+                });
+            } else {
+                noDataVentasDiv.innerHTML = '<div><i class="fas fa-info-circle fa-2x mb-2"></i><br/>No hay datos de ventas para mostrar.</div>';
+            }
+
+            // --- GRÁFICA DE TOP PRODUCTOS ---
+            const labelsProductos = /*[[${labelsTopProductos}]]*/ null;
+            const dataProductos = /*[[${dataTopProductos}]]*/ null;
+            const canvasProductos = document.getElementById('topProductosChart');
+            const noDataProductosDiv = document.getElementById('noDataProductos');
+            const topProductosLegendDiv = document.getElementById('topProductosLegend');
+            const defaultChartColors = ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b'];
+
+            if (canvasProductos && labelsProductos && Array.isArray(labelsProductos) && labelsProductos.length > 0) {
+                noDataProductosDiv.style.display = 'none';
+                canvasProductos.style.display = 'block';
+                const backgroundColors = labelsProductos.map((_, i) => defaultChartColors[i % defaultChartColors.length]);
+                new Chart(canvasProductos.getContext('2d'), {
+                    type: 'doughnut', data: { labels: labelsProductos, datasets: [{ data: dataProductos, backgroundColor: backgroundColors }] },
+                    options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { display: false } } }
+                });
+                labelsProductos.forEach((label, i) => {
+                    topProductosLegendDiv.innerHTML += `<span class="legend-item"><span class="legend-color-box" style="background-color:${backgroundColors[i]}"></span> ${label}</span>`;
+                });
+            } else {
+                noDataProductosDiv.innerHTML = '<div><i class="fas fa-info-circle fa-2x mb-2"></i><br/>No hay datos de productos para mostrar.</div>';
+            }
+        });
+    /*]]>*/
+    </script>
+</th:block>
+</body>
+</html>

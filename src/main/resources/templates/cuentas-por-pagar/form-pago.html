@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layouts/admin-layout :: admin-layout(pageTitle=${pageTitle}, content=~{::content})}">
+<head>
+    <title th:text="${pageTitle}">Formulario de Pago</title>
+</head>
+<body>
+<th:block th:fragment="content">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800" th:text="${pageTitle}">Registrar Pago</h1>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Información de la Cuenta</h6>
+                </div>
+                <div class="card-body">
+                    <p><strong>ID Compra:</strong> <span th:text="${cuenta.compraId}"></span></p>
+                    <p><strong>Monto Total:</strong> <span th:text="${#numbers.formatCurrency(cuenta.montoTotal)}"></span></p>
+                    <p><strong>Saldo Pendiente:</strong> 
+                        <span th:with="saldo=${cuenta.montoTotal.subtract(cuenta.montoPagado)}"
+                              th:text="${#numbers.formatCurrency(saldo)}"
+                              class="text-danger font-weight-bold"></span>
+                    </p>
+                    
+                    <hr>
+                    
+                    <form th:action="@{/cuentas-por-pagar/procesar-pago}" method="post" th:object="${pago}">
+                        
+                        <input type="hidden" name="cuentaId" th:value="${cuenta.id}" />
+
+                        <div class="form-group mb-3">
+                            <label for="montoPago">Monto a Pagar:</label>
+                            <input type="number" step="0.01" min="0.01" name="monto" class="form-control" id="montoPago" required 
+                                   th:max="${cuenta.montoTotal.subtract(cuenta.montoPagado)}" 
+                                   th:placeholder="|Máximo: ${#numbers.formatDecimal(cuenta.montoTotal.subtract(cuenta.montoPagado), 1, 2)}|" />
+                        </div>
+                        
+                        <div class="form-group mb-4">
+                            <label for="metodoPago">Método de Pago:</label>
+                            <select name="metodo" class="form-control" id="metodoPago" required>
+                                <option value="">Seleccione...</option>
+                                <option value="EFECTIVO">Efectivo</option>
+                                <option value="TRANSFERENCIA">Transferencia</option>
+                                <option option="TARJETA">Tarjeta</option>
+                                <option option="CHEQUE">Cheque</option>
+                            </select>
+                        </div>
+                        
+                        <div class="d-flex justify-content-end">
+                            <a th:href="@{/cuentas-por-pagar/ver/{id}(id=${cuenta.id})}" class="btn btn-secondary mr-2">
+                                Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-check-circle mr-1"></i> Confirmar Pago
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</th:block>
+</body>
+</html>

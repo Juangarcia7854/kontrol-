@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{layouts/admin-layout :: admin-layout(pageTitle=${pageTitle}, content=~{::content})}">
+      <body>
+<th:block th:fragment="content">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Lista de Productos</h1>
+        <a th:href="@{/productos/nuevo}" class="btn btn-primary shadow-sm"><i class="fas fa-plus fa-sm text-white-50"></i> Nuevo Producto</a>
+    </div>
+
+    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="fas fa-check-circle mr-2"></i>
+        <span th:text="${successMessage}"></span>
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="fas fa-exclamation-triangle mr-2"></i>
+        <span th:text="${errorMessage}"></span>
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+    
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Productos Registrados</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Imagen</th>
+                            <th>Nombre</th>
+                            <th>Descripción</th>
+                            <th>Precio</th>
+                            <th>Stock</th>
+                            <th>Categoría</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:if="${productos.isEmpty()}">
+                            <td colspan="7" class="text-center">No hay productos. Crea uno para empezar.</td>
+                        </tr>
+                        <tr th:each="producto : ${productos}">
+                            <td><img th:src="${producto.imagenUrl != null ? producto.imagenUrl : '/img/placeholder.png'}" alt="Imagen" style="width: 50px; height: 50px; object-fit: cover;"></td>
+                            <td th:text="${producto.nombre}"></td>
+                            <td th:text="${#strings.abbreviate(producto.descripcion, 50)}"></td>
+                            <td th:text="${producto.precio != null ? #numbers.formatCurrency(producto.precio) : '$0.00'}"></td>
+                            <td th:text="${producto.stock}"></td>
+                            <td th:text="${producto.categoria != null ? producto.categoria : 'Sin categoría'}"></td>
+                            
+                            <td>
+                                <a th:href="@{/productos/editar/{id}(id=${producto.id})}" class="btn btn-warning btn-sm" title="Editar"><i class="fas fa-edit"></i></a>
+                                
+                                <form th:action="@{/productos/eliminar/{id}(id=${producto.id})}" method="post" class="d-inline" onsubmit="return confirm('¿Estás seguro?');">
+                                    <button type="submit" class="btn btn-danger btn-sm" title="Eliminar"><i class="fas fa-trash"></i></button>
+                                </form>
+                                
+                                <button type="button" class="btn btn-success btn-sm ml-1"
+                                        data-toggle="modal" data-target="#ajustarStockModal"
+                                        th:data-id="${producto.id}"
+                                        th:data-nombre="${producto.nombre}"
+                                        title="Ajustar Stock">
+                                    <i class="fas fa-sliders-h"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal fade" id="ajustarStockModal" tabindex="-1" role="dialog" aria-labelledby="modalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                
+                <form th:action="@{/productos/ajustar}" method="POST">
+                <div class="modal-header">
+                        <h5 class="modal-title" id="modalLabel">Ajustar Stock para: <span id="modalProductoNombre"></span></h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" name="productoId" id="modalProductoId" value="" />
+                        
+                        <div class="form-group">
+                            <label for="cantidad">Cantidad a Mover</label>
+                            <input type="number" class="form-control" id="cantidad" name="cantidad" 
+                                   placeholder="Ej: 50 (para agregar) o -10 (para restar)" required>
+                            <small class="form-text text-muted">
+                                Usa números positivos para entradas y negativos para salidas.
+                            </small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="motivo">Motivo del Ajuste</label>
+                            <input type="text" class="form-control" id="motivo" name="motivo" 
+                                   placeholder="Ej: Conteo físico fin de mes" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Guardar Ajuste</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</th:block>
+
+<th:block th:fragment="page-scripts">
+    <script>
+        $(document).ready(function() {
+            // Escucha cuando el modal está a punto de mostrarse
+            $('#ajustarStockModal').on('show.bs.modal', function (event) {
+                var button = $(event.relatedTarget); 
+                var productoId = button.data('id');
+                var productoNombre = button.data('nombre');
+                
+                var modal = $(this);
+                
+                modal.find('#modalProductoNombre').text(productoNombre);
+                modal.find('#modalProductoId').val(productoId);
+            });
+        });
+    </script>
+</th:block>
+</body>
+</html>

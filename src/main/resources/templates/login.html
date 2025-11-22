@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar Sesión | Kontrol+</title>
+
+    <!-- Fuente Poppins (coherente con el admin-layout) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome (para iconos en los inputs) -->
+    <link rel="stylesheet" th:href="@{/webjars/font-awesome/5.15.3/css/all.min.css}">
+
+    <style>
+        /* --- Variables (Mismo tema que admin-layout) --- */
+        :root {
+            --color-primary: #4a43c9;        /* Azul Kontrol+ (Acento) */
+            --color-primary-dark: #4338CA;   /* Azul Kontrol+ (Hover) */
+            --color-bg: #F9FAFB;             /* Fondo de Página (Gris muy claro) */
+            --color-surface: #FFFFFF;        /* Fondo de Tarjeta (Blanco) */
+            --text-dark: #1F2937;            /* Texto Principal (Casi Negro) */
+            --text-secondary: #6B7280;       /* Texto Secundario (Gris) */
+            --border-color: #E5E7EB;         /* Bordes Sutiles */
+            --danger-bg: #FEF2F2;            /* Fondo Alerta Error */
+            --danger-text: #DC2626;           /* Texto Alerta Error */
+            --success-bg: #F0FDF4;           /* Fondo Alerta Éxito */
+            --success-text: #16A34A;          /* Texto Alerta Éxito */
+        }
+
+        body, html {
+            height: 100%;
+            margin: 0;
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--color-bg); /* Fondo gris claro */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: 450px; /* Ancho de la tarjeta */
+            padding: 2rem;
+            box-sizing: border-box;
+        }
+
+        .login-card {
+            background: var(--color-surface); /* Fondo blanco */
+            border: 1px solid var(--border-color); /* Borde sutil (del nuevo admin) */
+            border-radius: 12px; /* Esquinas redondeadas (del nuevo admin) */
+            padding: 2.5rem 3rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05); /* Sombra muy suave */
+            animation: cardFadeIn 0.5s ease-out 0.1s forwards; /* Retraso de 0.1s */
+            opacity: 0; /* Inicia invisible para la animación */
+        }
+        
+        @keyframes cardFadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        /* --- ANIMACIÓN DE LOGO ACTUALIZADA --- */
+        .login-header img {
+            max-height: 90px; /* <-- TAMAÑO AUMENTADO A 90px */
+            width: auto;
+            margin-bottom: 1.5rem;
+            
+            /* Animación */
+            opacity: 0;
+            /* Se aplica la animación 'logoPulse' */
+            animation: logoPulse 1.2s ease-out 0.4s forwards;
+        }
+        
+        @keyframes logoPulse {
+             0% {
+                opacity: 0;
+                transform: translateY(-10px) scale(0.9); /* Inicia más pequeño */
+            }
+            60% {
+                opacity: 1;
+                transform: translateY(0) scale(1.05); /* Efecto "pop" más grande */
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1); /* Estado final */
+            }
+        }
+        /* --- FIN DE ANIMACIÓN DE LOGO --- */
+        
+        .login-header h2 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin: 0;
+            /* Animación para el título */
+            opacity: 0;
+            animation: fadeIn 0.6s ease-out 0.8s forwards;
+        }
+
+        @keyframes fadeIn {
+             from { opacity: 0; } to { opacity: 1; }
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+        .form-group label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+        .form-control {
+            width: 100%;
+            padding: 12px 1rem 12px 2.75rem; /* Padding para icono (aumentado) */
+            border-radius: 8px; /* Esquinas redondeadas (del nuevo admin) */
+            border: 1px solid var(--border-color);
+            font-family: 'Poppins', sans-serif;
+            font-size: 1rem;
+            background-color: #fff;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            box-sizing: border-box; /* Importante para padding */
+        }
+        .form-control:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(74, 67, 201, 0.1);
+        }
+        .form-group .icon {
+            position: absolute;
+            left: 1rem;
+            /* Ajustado para centrarse mejor con el label */
+            top: calc(50% + 10px); 
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+            opacity: 0.5;
+            transition: color 0.2s ease;
+        }
+        .form-control:focus + .icon {
+            color: var(--color-primary);
+            opacity: 1;
+        }
+        
+        .form-options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+        }
+        .form-options .checkbox-label {
+            display: flex;
+            align-items: center;
+            color: var(--text-secondary);
+            cursor: pointer;
+        }
+        .form-options .checkbox-label input {
+            margin-right: 0.5rem;
+            accent-color: var(--color-primary); /* Color del check */
+        }
+        /* Desactivado (para "Olvidé contraseña") */
+        .form-options .forgot-password {
+             color: #ccc;
+             text-decoration: none;
+             cursor: default;
+             pointer-events: none;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 0.85rem;
+            border: none;
+            border-radius: 8px;
+            background-color: var(--color-primary);
+            color: white;
+            font-size: 1.05rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .btn-submit:hover {
+            background-color: var(--color-primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(74, 67, 201, 0.2);
+        }
+
+        .footer-link {
+            text-align: center;
+            margin-top: 2rem;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+        .footer-link a {
+            color: var(--color-primary);
+            font-weight: 600;
+            text-decoration: none;
+        }
+        .footer-link a:hover {
+            text-decoration: underline;
+        }
+
+        .alert {
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            font-weight: 500;
+            border: 1px solid transparent;
+        }
+        .alert-danger-custom {
+            background-color: var(--danger-bg);
+            color: var(--danger-text);
+            border-color: var(--danger-text);
+        }
+        .alert-success {
+            background-color: var(--success-bg);
+            color: var(--success-text);
+            border-color: var(--success-text);
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            
+            <div class="login-header">
+                <a th:href="@{/}">
+                    <!-- LOGO MÁS GRANDE Y ANIMADO -->
+                    <img th:src="@{/images/kontrol-plus-logo.png}" alt="Kontrol+ Logo" style="max-height: 90px; width: auto;">
+                </a>
+                <h2>Iniciar Sesión</h2>
+            </div>
+            
+            <!-- MENSAJES DE ESTADO (incluyendo Demo) -->
+            <div th:if="${param.error}" class="alert alert-danger-custom"> Usuario o contraseña incorrectos. </div>
+            <div th:if="${param.logout}" class="alert alert-success"> Has cerrado sesión exitosamente. </div>
+            <div th:if="${param.demoExpired}" class="alert alert-danger-custom"> Tu sesión de demostración ha expirado. </div>
+            <div th:if="${param.demoError}" class="alert alert-danger-custom"> No se pudo iniciar la sesión de demostración. </div>
+
+            <form th:action="@{/login}" method="POST">
+                <div class="form-group">
+                    <label for="username">Email o Username</label>
+                    <input type="text" id="username" name="username" class="form-control" placeholder="tu@email.com" required autofocus>
+                    <i class="fas fa-user icon"></i>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Contraseña</label>
+                    <input type="password" id="password" name="password" class="form-control" placeholder="••••••••" required>
+                    <i class="fas fa-lock icon"></i>
+                </div>
+                
+                <div class="form-options">
+                    <label class="checkbox-label" for="remember-me">
+                        <input type="checkbox" id="remember-me" name="remember-me">
+                        Recordarme
+                    </label>
+                    <!-- Enlace de "Olvidé contraseña" desactivado -->
+                    <a href="#" class="forgot-password disabled">¿Olvidaste tu contraseña?</a>
+                </div>
+                
+                <button type="submit" class="btn-submit">Ingresar</button>
+            </form>
+            
+            <div class="footer-link">
+                
+            </div>
+            
+        </div>
+    </div>
+</body>
+</html>

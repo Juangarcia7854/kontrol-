@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{layouts/admin-layout :: admin-layout(pageTitle=${pageTitle}, content=~{::content})}">
+<head>
+    <style>
+        .pos-container { display: flex; gap: 2rem; }
+        .pos-main { flex-grow: 1; }
+        .pos-sidebar { width: 400px; flex-shrink: 0; }
+        #resultados-busqueda { position: absolute; background: white; border: 1px solid #ccc; z-index: 100; width: 100%; max-height: 300px; overflow-y: auto; }
+        #resultados-busqueda .list-group-item { cursor: pointer; }
+        #resultados-busqueda .list-group-item:hover { background-color: #f0f0f0; }
+    </style>
+</head>
+<body>
+<th:block th:fragment="content">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800" th:text="#{pos.titulo}">Punto de Venta (POS)</h1>
+    </div>
+
+    <div class="pos-container">
+        <div class="pos-main">
+            <div class="card shadow mb-4">
+                <div class="card-header"><h6 class="m-0 font-weight-bold text-primary" th:text="#{pos.buscar_producto}">Buscar Producto</h6></div>
+                <div class="card-body">
+                    <div class="p-3 position-relative">
+                        <input type="text" id="buscador-producto" class="form-control form-control-lg" th:placeholder="#{pos.placeholder_buscar}">
+                        <div id="resultados-busqueda" class="list-group mt-1" style="display: none;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow">
+                <div class="card-header"><h6 class="m-0 font-weight-bold text-primary" th:text="#{pos.detalle_venta}">Detalle de Venta Actual</h6></div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th th:text="#{pos.tabla.producto}">Producto</th>
+                                    <th style="width: 120px;" th:text="#{pos.tabla.cantidad}">Cantidad</th>
+                                    <th th:text="#{pos.tabla.precio_unitario}">Precio Unit.</th>
+                                    <th th:text="#{pos.tabla.subtotal}">Subtotal</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-venta-items">
+                                </tbody>
+                        </table>
+                    </div>
+                    <div id="carrito-vacio" class="text-center p-5 text-muted">
+                        <i class="fas fa-shopping-cart fa-3x mb-3"></i>
+                        <p th:text="#{pos.carrito_vacio}">El carrito de venta está vacío.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="pos-sidebar">
+            <div class="card shadow">
+                <div class="card-header"><h6 class="m-0 font-weight-bold text-primary" th:text="#{pos.finalizar_venta}">Finalizar Venta</h6></div>
+                <div class="card-body">
+                    <form id="formulario-venta-pos" th:action="@{/ventas/guardar}" method="post">
+                        <div class="form-group">
+                            <label for="clienteId"><b th:text="#{pos.cliente}">Cliente:</b></label>
+                            <select id="clienteId" name="clienteId" class="form-control" required>
+                                <option th:each="cliente : ${clientes}" th:value="${cliente.id}" th:text="${cliente.nombre} + ' ' + ${cliente.apellido}"></option>
+                            </select>
+                        </div>
+                        <hr>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span th:text="#{pos.resumen.subtotal}">Subtotal:</span>
+                            <span id="pos-subtotal">$0.00</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-3">
+                            <span th:text="#{pos.resumen.iva} + ' (' + (${datosEmpresa != null && datosEmpresa.ivaPorDefecto != null ? datosEmpresa.ivaPorDefecto : 19}) + '%)'">IVA:</span>
+                            <span id="pos-iva">$0.00</span>
+                        </div>
+                        <div class="d-flex justify-content-between h4 font-weight-bold">
+                            <span th:text="#{pos.resumen.total}">TOTAL:</span>
+                            <span id="pos-total">$0.00</span>
+                        </div>
+                        <hr>
+                        <div id="hidden-details-container"></div>
+                        
+                        <button type="submit" class="btn btn-success btn-lg btn-block mt-3">
+                            <i class="fas fa-check-circle mr-2"></i>
+                            <span th:text="#{pos.boton_registrar}">Registrar Venta</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <th:block layout:fragment="page-scripts">
+        <script th:inline="javascript">
+        /*<![CDATA[*/
+            document.addEventListener('DOMContentLoaded', function() {
+                const buscador = document.getElementById('buscador-producto');
+                const resultadosDiv = document.getElementById('resultados-busqueda');
+                const itemsTbody = document.getElementById('tabla-venta-items');
+                const carritoVacioDiv = document.getElementById('carrito-vacio');
+                const hiddenDetailsContainer = document.getElementById('hidden-details-container');
+                const form = document.getElementById('formulario-venta-pos');
+                let ventaItems = {};
+                const datosEmpresa = /*[[${datosEmpresa}]]*/ null;
+                const locale = /*[[${#strings.replace(#locale.toString(), '_', '-')}]]*/ 'es-CO';
+                const currencyCode = (datosEmpresa && datosEmpresa.monedaPorDefecto) ? datosEmpresa.monedaPorDefecto : 'COP';
+                const ivaDecimal = (datosEmpresa && datosEmpresa.ivaPorDefecto != null) ? datosEmpresa.ivaPorDefecto : 19.0;
+                const porcentajeIva = ivaDecimal / 100.0;
+                const currencyFormatter = new Intl.NumberFormat(locale, { style: 'currency', currency: currencyCode });
+
+                if (itemsTbody) {
+                    itemsTbody.addEventListener('click', function(e) {
+                        const deleteButton = e.target.closest('.btn-danger');
+                        if (deleteButton) {
+                            eliminarItem(deleteButton.dataset.id);
+                        }
+                    });
+                    itemsTbody.addEventListener('change', function(e) {
+                        if (e.target.matches('input[type="number"]')) {
+                            cambiarCantidad(e.target.dataset.id, e.target.value);
+                        }
+                    });
+                }
+                
+                if (buscador) {
+                    buscador.addEventListener('keyup', function(e) {
+                        const termino = e.target.value;
+                        if (termino.length < 2) {
+                            resultadosDiv.style.display = 'none';
+                            return;
+                        }
+                        fetch(`[(@{/productos/api/buscar})]` + `?term=${termino}`)
+                            .then(response => response.json())
+                            .then(productos => {
+                                resultadosDiv.innerHTML = '';
+                                if (productos.length > 0) {
+                                    productos.forEach(p => {
+                                        const item = document.createElement('a');
+                                        item.classList.add('list-group-item', 'list-group-item-action');
+                                        item.innerHTML = `<div class="d-flex justify-content-between"><span>${p.nombre}</span><span class="font-weight-bold">${currencyFormatter.format(p.precio)}</span></div><small class="text-muted">Stock: ${p.stockActual}</small>`;
+                                        item.addEventListener('click', () => agregarItemAVenta(p));
+                                        resultadosDiv.appendChild(item);
+                                    });
+                                    resultadosDiv.style.display = 'block';
+                                } else {
+                                    resultadosDiv.style.display = 'none';
+                                }
+                            });
+                    });
+                }
+
+                document.addEventListener('click', function(e) {
+                    if (resultadosDiv && !buscador.contains(e.target)) {
+                        resultadosDiv.style.display = 'none';
+                    }
+                });
+                
+                if(form){
+                    form.addEventListener('submit', function(e) {
+                        if (Object.keys(ventaItems).length === 0) {
+                            e.preventDefault();
+                            alert('No se puede registrar una venta sin productos.');
+                        }
+                    });
+                }
+
+                function agregarItemAVenta(producto) {
+                    buscador.value = '';
+                    if (resultadosDiv) resultadosDiv.style.display = 'none';
+                    if (ventaItems[producto.id]) {
+                        ventaItems[producto.id].cantidad++;
+                    } else {
+                        ventaItems[producto.id] = { productoId: producto.id, nombre: producto.nombre, precio: producto.precio, cantidad: 1, stockMaximo: producto.stockActual };
+                    }
+                    actualizarTablaYTotales();
+                }
+
+                function cambiarCantidad(id, nuevaCantidad) {
+                    const cant = parseInt(nuevaCantidad);
+                    if (ventaItems[id] && cant > 0 && cant <= ventaItems[id].stockMaximo) {
+                        ventaItems[id].cantidad = cant;
+                    }
+                    actualizarTablaYTotales();
+                }
+
+                function eliminarItem(id) {
+                    delete ventaItems[id];
+                    actualizarTablaYTotales();
+                }
+
+                function actualizarTablaYTotales() {
+                    if (!itemsTbody || !hiddenDetailsContainer || !carritoVacioDiv) return;
+                    itemsTbody.innerHTML = '';
+                    hiddenDetailsContainer.innerHTML = '';
+                    let subtotalGeneral = 0;
+                    let index = 0;
+                    const hayItems = Object.keys(ventaItems).length > 0;
+                    carritoVacioDiv.style.display = hayItems ? 'none' : 'block';
+                    itemsTbody.style.display = hayItems ? '' : 'none';
+
+                    for (const id in ventaItems) {
+                        const item = ventaItems[id];
+                        const subtotalItem = item.precio * item.cantidad;
+                        subtotalGeneral += subtotalItem;
+                        const row = document.createElement('tr');
+                        row.innerHTML = `<td>${item.nombre}</td><td><input type="number" class="form-control form-control-sm" value="${item.cantidad}" min="1" max="${item.stockMaximo}" data-id="${id}"></td><td>${currencyFormatter.format(item.precio)}</td><td>${currencyFormatter.format(subtotalItem)}</td><td><button type="button" class="btn btn-danger btn-sm" data-id="${id}">&times;</button></td>`;
+                        itemsTbody.appendChild(row);
+                        hiddenDetailsContainer.innerHTML += `<input type="hidden" name="detalles[${index}].productoId" value="${item.productoId}"><input type="hidden" name="detalles[${index}].cantidad" value="${item.cantidad}"><input type="hidden" name="detalles[${index}].precioUnitario" value="${item.precio}">`;
+                        index++;
+                    }
+                    
+                    const iva = subtotalGeneral * porcentajeIva;
+                    const total = subtotalGeneral + iva;
+                    document.getElementById('pos-subtotal').textContent = currencyFormatter.format(subtotalGeneral);
+                    document.getElementById('pos-iva').textContent = currencyFormatter.format(iva);
+                    document.getElementById('pos-total').textContent = currencyFormatter.format(total);
+                }
+                
+                actualizarTablaYTotales();
+            });
+        /*]]>*/
+        </script>
+    </th:block>
+</body>
+</html>

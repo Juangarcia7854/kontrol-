@@ -1,0 +1,91 @@
+/* --- Estilos Específicos para Impresión --- */
+@media print {
+
+    /* Ocultar la barra lateral, la barra superior y el pie de página del layout */
+    .admin-sidebar,
+    .admin-topbar,
+    .admin-footer {
+        display: none !important;
+    }
+
+    /* Ocultar todos los botones genéricamente */
+    .btn {
+        display: none !important;
+    }
+
+    /* Asegurar que el área principal donde se inserta el contenido ocupe todo */
+    .admin-main-content {
+        margin-left: 0 !important; /* Quitar el margen izquierdo de la sidebar */
+        width: 100% !important;     /* Ocupar todo el ancho */
+        padding-top: 0 !important;  /* Quitar el espacio superior de la topbar */
+        min-height: auto !important; /* Permitir que la altura se ajuste al contenido */
+        box-shadow: none !important;
+        border: none !important;
+        background-color: #fff !important; /* Fondo blanco */
+    }
+
+    /* Asegurar que el contenedor interno del contenido también ocupe el espacio */
+    .admin-content-inner {
+        padding: 0 !important; /* Quitar padding interno si no se necesita */
+        margin: 0 !important;
+    }
+
+    /* Estilos generales para el cuerpo en impresión */
+    body {
+        margin: 0;
+        padding: 0;
+        font-size: 10pt; /* O ajusta según necesites */
+        background-color: #fff;
+        color: #000;
+    }
+
+    /* (Opcional) Si tienes contenedores específicos para la factura dentro
+       de .admin-content-inner, asegúrate que sean visibles.
+       Ejemplo: Si tu factura está en <div class="invoice-container"> */
+    /* .invoice-container {
+        display: block !important;
+        width: 100% !important;
+    } */
+
+     /* (Opcional) Estilos para tablas (ajusta si es necesario) */
+    table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+    }
+    th, td {
+        border: 1px solid #ccc !important;
+        padding: 4px !important;
+        color: #000 !important; /* Asegurar texto negro */
+        background-color: #fff !important; /* Sin fondos de celda */
+    }
+    /* Quitar colores específicos de las tarjetas resumen si se llegaran a imprimir */
+    .summary-card {
+         border: 1px solid #ccc !important;
+         box-shadow: none !important;
+         border-left: none !important; /* Quitar borde de color izquierdo */
+         page-break-inside: avoid !important;
+    }
+    .summary-card .card-title,
+    .summary-card .card-value,
+    .summary-card .card-icon {
+        color: #000 !important; /* Poner todo el texto en negro */
+    }
+
+
+    /* (Opcional) Evitar saltos de página */
+    /* Ajusta '.invoice-details', '.firmas-section' si usas otras clases para la factura */
+    .invoice-details, table, tr, td, th, .firmas-section {
+        page-break-inside: avoid !important;
+    }
+}
+
+/* Clase genérica para ocultar cualquier otro elemento específico */
+/* Simplemente añade class="no-print" a cualquier elemento HTML que no quieras imprimir */
+.no-print {
+    /* Estilos para pantalla - no se necesita nada aquí usualmente */
+}
+@media print {
+    .no-print {
+        display: none !important;
+    }
+}

@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:replace="~{layouts/admin-layout :: admin-layout(pageTitle=${pageTitle}, content=~{::.admin-content-inner})}">
+    <div class="admin-content-inner">
+        <h1 class="h3 mb-4 text-gray-800">Registrar Nueva Compra</h1>
+        
+        <form th:action="@{/compras/guardar}" th:object="${compra}" method="POST" id="registroCompraForm">
+            <div class="card shadow mb-4">
+                <div class="card-body">
+                    <div class="form-group">
+                        <label for="proveedor">Proveedor</label>
+                        <select id="proveedor" th:field="*{proveedorId}" class="form-control" required>
+                            <option value="">-- Seleccione un Proveedor --</option>
+                            <option th:each="p : ${listaProveedores}" th:value="${p.id}" th:text="${p.nombre}"></option>
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            <label for="fechaDeCompra">Fecha y Hora</label>
+                            <input type="datetime-local" class="form-control" id="fechaDeCompra" th:field="*{fechaDeCompra}" required>
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label for="montoTotalDisplay">Monto Total</label>
+                            <input type="text" class="form-control" id="montoTotalDisplay" value="$ 0.00" readonly>
+                            <input type="hidden" id="total" th:field="*{total}" value="0.00">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Agregar Productos</h6>
+                </div>
+                <div class="card-body">
+                    <div class="form-row">
+                        <div class="form-group col-md-4">
+                            <label for="productoSeleccionado">Producto</label>
+                            <select id="productoSeleccionado" class="form-control">
+                                <option value="" data-precio="0">-- Seleccione un Producto --</option>
+                                <option th:each="prod : ${listaProductos}" 
+                                        th:value="${prod.id}" 
+                                        th:data-nombre="${prod.nombre}"
+                                        th:data-precio="${prod.precio}" 
+                                        th:text="${prod.nombre + ' ($' + #numbers.formatDecimal(prod.precio, 1, 'COMMA', 2, 'POINT') + ')'}">
+                                    Nombre Producto ($0.00)
+                                </option>
+                            </select>
+                        </div>
+                        <div class="form-group col-md-2">
+                            <label for="cantidad">Cantidad</label>
+                            <input type="number" id="cantidad" class="form-control" value="1" min="1">
+                        </div>
+                        <div class="form-group col-md-3">
+                            <label for="precioCompra">Precio de Compra</label>
+                            <input type="number" id="precioCompra" class="form-control" step="0.01" value="0.00">
+                        </div>
+                        <div class="form-group col-md-3 d-flex align-items-end">
+                            <button type="button" id="agregarProductoBtn" class="btn btn-success btn-block">
+                                <i class="fas fa-plus"></i> Agregar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow mb-4">
+                <div class="card-header py-3"><h6 class="m-0 font-weight-bold text-primary">Productos Comprados</h6></div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th>Producto</th>
+                                    <th>Cantidad</th>
+                                    <th>Precio Unitario</th>
+                                    <th>Subtotal</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="detallesCompraBody">
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="detalleInputsContainer">
+                </div>
+
+            <button type="submit" class="btn btn-primary">Guardar Compra</button>
+            <a th:href="@{/compras}" class="btn btn-secondary">Cancelar</a>
+        </form>
+    </div>
+</div>
+
+<script th:src="@{/webjars/jquery/3.5.1/jquery.min.js}"></script>
+<script>
+let detalleIndex = 0;
+
+$(document).ready(function() {
+
+    // 1. Cargar el Precio de Venta del Producto al seleccionarlo
+    $('#productoSeleccionado').change(function() {
+        const selectedOption = $(this).find('option:selected');
+        const precioVenta = selectedOption.data('precio');
+        if (precioVenta) {
+            // Usar el precio de venta del producto como sugerencia inicial para el precio de compra
+            $('#precioCompra').val(precioVenta.toFixed(2));
+        } else {
+            $('#precioCompra').val('0.00');
+        }
+    });
+    
+    // 2. Función para calcular y actualizar el total
+    function actualizarTotal() {
+        let total = 0;
+        // Sumar los valores de todos los campos ocultos de subtotal
+        $('#detalleInputsContainer input[name$=".subtotal"]').each(function() {
+            total += parseFloat($(this).val() || 0); // Usar 0 si el valor no es válido
+        });
+
+        // Actualizar el campo oculto que Spring mapeará a Compra.total
+        $('#total').val(total.toFixed(2));
+        // Actualizar el display visible para el usuario
+        $('#montoTotalDisplay').val('$ ' + total.toLocaleString('es-CO', {minimumFractionDigits: 2}));
+    }
+
+    // 3. Maneja el clic en el botón 'Agregar'
+    $('#agregarProductoBtn').on('click', function() {
+        const select = $('#productoSeleccionado');
+        const productoId = select.val();
+        const nombreProducto = select.find('option:selected').data('nombre');
+        const cantidad = parseInt($('#cantidad').val());
+        const precioUnitario = parseFloat($('#precioCompra').val());
+
+        if (!productoId || !cantidad || cantidad <= 0 || isNaN(precioUnitario) || precioUnitario <= 0) {
+            alert('Asegúrese de seleccionar un producto e ingresar cantidad y precio válidos.');
+            return;
+        }
+
+        const subtotal = cantidad * precioUnitario;
+
+        // A. Agregar la fila a la tabla visible
+        const newRow = `
+            <tr id="row-${detalleIndex}">
+                <td>${nombreProducto}</td>
+                <td>${cantidad}</td>
+                <td>$ ${precioUnitario.toFixed(2).toLocaleString('es-CO')}</td>
+                <td>$ ${subtotal.toFixed(2).toLocaleString('es-CO')}</td>
+                <td><button type="button" class="btn btn-danger btn-sm eliminar-detalle" data-index="${detalleIndex}"><i class="fas fa-trash"></i></button></td>
+            </tr>
+        `;
+        $('#detallesCompraBody').append(newRow);
+
+        // B. Agregar campos ocultos para enviar los datos (CRUCIAL)
+        // Spring mapeará estos campos a Compra.detalles[i]
+        const hiddenInputs = `
+            <input type="hidden" name="detalles[${detalleIndex}].productoId" value="${productoId}">
+            <input type="hidden" name="detalles[${detalleIndex}].nombreProducto" value="${nombreProducto}">
+            <input type="hidden" name="detalles[${detalleIndex}].cantidad" value="${cantidad}">
+            <input type="hidden" name="detalles[${detalleIndex}].precioUnitario" value="${precioUnitario.toFixed(2)}">
+            <input type="hidden" name="detalles[${detalleIndex}].subtotal" value="${subtotal.toFixed(2)}">
+        `;
+        $('#detalleInputsContainer').append(hiddenInputs);
+
+        // C. Actualizar el total y el índice
+        actualizarTotal();
+        detalleIndex++;
+
+        // D. Limpiar inputs para el siguiente producto
+        $('#productoSeleccionado').val('');
+        $('#cantidad').val(1);
+        $('#precioCompra').val('0.00');
+    });
+
+    // 4. Maneja el clic en el botón 'Eliminar' y reindexa
+    $(document).on('click', '.eliminar-detalle', function() {
+        const indexToRemove = $(this).data('index');
+        
+        // 1. Eliminar la fila visible y sus inputs ocultos
+        $(`#row-${indexToRemove}`).remove();
+        $(`#detalleInputsContainer input[name^="detalles[${indexToRemove}]"]`).remove();
+        
+        // 2. Reindexar los campos ocultos restantes para evitar huecos en la lista de Spring
+        reindexarDetalles();
+        
+        // 3. Actualizar el total
+        actualizarTotal();
+    });
+
+    // Función crucial para asegurar que la lista se mapee correctamente después de una eliminación
+    function reindexarDetalles() {
+        let newIndex = 0;
+        $('#detalleInputsContainer input[type="hidden"]').each(function() {
+            // Obtener el nombre original del campo (ej: .productoId, .cantidad)
+            const oldName = $(this).attr('name');
+            const match = oldName.match(/detalles\[\d+\]\.(.*)/);
+            
+            if (match && match.length > 1) {
+                const propertyName = match[1]; // Obtiene "productoId", "cantidad", etc.
+                
+                // Asignar el nuevo nombre con el índice consecutivo
+                const newName = `detalles[${newIndex}].${propertyName}`;
+                $(this).attr('name', newName);
+
+                // Si es el primer input de un grupo, actualiza la fila visible y el data-index del botón
+                if (propertyName === 'productoId') {
+                    // Buscar la fila visible y actualizar su ID y el botón
+                    const oldRowId = $(this).siblings(`input[name="detalles[${newIndex}].nombreProducto"]`).data('row-id'); // Usar data-row-id si lo agregamos
+
+                    // En este simple ejemplo, re-obtener todos los botones de eliminar es más fácil:
+                    $(`#detallesCompraBody tr`).each(function(i, row) {
+                        $(row).attr('id', `row-${i}`);
+                        $(row).find('.eliminar-detalle').data('index', i);
+                    });
+                    newIndex++;
+                }
+            }
+        });
+        // Reiniciar el índice global para el próximo elemento agregado
+        detalleIndex = newIndex; 
+    }
+    
+    // Al cargar la página, asegurar que el total sea 0
+    actualizarTotal();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layouts/admin-layout :: admin-layout(pageTitle=${pageTitle}, content=~{::content})}">
+<body>
+<th:block th:fragment="content">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Dashboard</h1>
+    </div>
+
+    <div class="row">
+        <div class="col-xl-3 col-md-6 mb-4">
+             <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Ingresos (Hoy)</div>
+                    <div id="ingresos-hoy" class="h5 mb-0 font-weight-bold text-gray-800">$0.00</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Producto Estrella (Histórico)</div>
+                    <div id="producto-mas-vendido" class="h5 mb-0 font-weight-bold text-gray-800">Cargando...</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Promedio por Cliente</div>
+                    <div id="venta-promedio-cliente" class="h5 mb-0 font-weight-bold text-gray-800">$0.00</div>
+                </div>
+            </div>
+        </div>
+        </div>
+
+    <div class="row">
+       <div class="col-xl-8 col-lg-7">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3"><h6 class="m-0 font-weight-bold text-primary">Ventas Netas (Últimos 7 Días)</h6></div>
+                <div class="card-body"><div class="chart-area"><canvas id="ventasSemanalesChart"></canvas></div></div>
+            </div>
+        </div>
+        <div class="col-xl-4 col-lg-5">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3"><h6 class="m-0 font-weight-bold text-primary">Top 5 Productos (Hoy)</h6></div>
+                <div class="card-body"><div class="chart-pie pt-4"><canvas id="topProductosChart"></canvas></div></div>
+            </div>
+        </div>
+    </div>
+</th:block>
+
+<th:block layout:fragment="page-scripts">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script th:inline="javascript">
+    document.addEventListener('DOMContentLoaded', function() {
+        const currencyFormatter = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' });
+
+        // Cargar todas las métricas dinámicas
+        fetch('/api/dashboard/metrics')
+            .then(response => response.ok ? response.json() : Promise.reject('Failed to load metrics'))
+            .then(data => {
+                // Actualizar tarjetas existentes
+                document.getElementById('ingresos-hoy').textContent = currencyFormatter.format(data.ingresosHoy || 0);
+                
+                // ✅ INICIO: ACTUALIZAR NUEVAS TARJETAS CON DATOS DE LA API
+                if (data.productoMasVendidoNombre) {
+                    const productoEl = document.getElementById('producto-mas-vendido');
+                    productoEl.textContent = `${data.productoMasVendidoNombre} (${data.productoMasVendidoCantidad || 0} uds)`;
+                }
+                if (data.ventaPromedioPorCliente) {
+                    const promedioEl = document.getElementById('venta-promedio-cliente');
+                    promedioEl.textContent = currencyFormatter.format(data.ventaPromedioPorCliente || 0);
+                }
+                // ✅ FIN: ACTUALIZAR NUEVAS TARJETAS
+            })
+            .catch(error => console.error('Error cargando métricas:', error));
+
+        // ... (el código fetch para las gráficas que ya tenías se queda igual) ...
+    });
+    </script>
+</th:block>
+</body>
+</html>

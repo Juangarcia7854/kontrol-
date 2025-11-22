@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{layouts/admin-layout :: admin-layout(pageTitle=${pageTitle}, content=~{::content})}">
+      <head>
+    <title th:text="${pageTitle ?: 'Formulario de Proveedor'}">Formulario de Proveedor</title>
+</head>
+<body>
+<th:block th:fragment="content">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800" th:text="${pageTitle}">Formulario de Proveedor</h1>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-md-10">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i th:class="${proveedor.id == null || proveedor.id.isEmpty()} ? 'fas fa-plus-circle mr-2' : 'fas fa-edit mr-2'"></i>
+                        <span th:text="${proveedor.id == null || proveedor.id.isEmpty()} ? 'Registrar Nuevo Proveedor' : 'Editar Proveedor'">Detalles del Proveedor</span>
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <form th:action="@{/proveedores/guardar}" th:object="${proveedor}" method="post">
+                        <input type="hidden" th:field="*{id}" />
+
+                        <div class="form-group mb-3">
+                            <label for="nombre" class="form-label">Nombre del Proveedor:</label>
+                            <input type="text" th:field="*{nombre}" class="form-control" id="nombre" placeholder="Ej: Proveedor ABC S.A."
+                                   th:errorclass="is-invalid" required/>
+                            <div th:if="${#fields.hasErrors('nombre')}" th:errors="*{nombre}" class="invalid-feedback"></div>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label for="rucNit" class="form-label">RUC / NIT:</label>
+                            <input type="text" th:field="*{rucNit}" class="form-control" id="rucNit" placeholder="Número de identificación fiscal"
+                                   th:errorclass="is-invalid" required/>
+                            <div th:if="${#fields.hasErrors('rucNit')}" th:errors="*{rucNit}" class="invalid-feedback"></div>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label for="personaContacto" class="form-label">Persona de Contacto:</label>
+                            <input type="text" th:field="*{personaContacto}" class="form-control" id="personaContacto" placeholder="Ej: Juan Pérez"
+                                   th:errorclass="is-invalid" />
+                            <div th:if="${#fields.hasErrors('personaContacto')}" th:errors="*{personaContacto}" class="invalid-feedback"></div>
+                        </div>
+
+                        <div class="form-row mb-3">
+                            <div class="form-group col-md-6">
+                                <label for="email" class="form-label">Email:</label>
+                                <input type="email" th:field="*{email}" class="form-control" id="email" placeholder="contacto@proveedor.com"
+                                       th:errorclass="is-invalid" />
+                                <div th:if="${#fields.hasErrors('email')}" th:errors="*{email}" class="invalid-feedback"></div>
+                            </div>
+                            <div class="form-group col-md-6">
+                                <label for="telefono" class="form-label">Teléfono:</label>
+                                <input type="tel" th:field="*{telefono}" class="form-control" id="telefono" placeholder="+57 123 4567890"
+                                       th:errorclass="is-invalid" />
+                                <div th:if="${#fields.hasErrors('telefono')}" th:errors="*{telefono}" class="invalid-feedback"></div>
+                            </div>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label for="direccion" class="form-label">Dirección:</label>
+                            <textarea th:field="*{direccion}" class="form-control" id="direccion" rows="2" placeholder="Dirección completa del proveedor"
+                                      th:errorclass="is-invalid"></textarea>
+                            <div th:if="${#fields.hasErrors('direccion')}" th:errors="*{direccion}" class="invalid-feedback"></div>
+                        </div>
+
+                        <div class="form-group mb-4">
+                            <label for="notas" class="form-label">Notas (Opcional):</label>
+                            <textarea th:field="*{notas}" class="form-control" id="notas" rows="3" placeholder="Información adicional sobre el proveedor"></textarea>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <div class="d-flex justify-content-end">
+                            <a th:href="@{/proveedores}" class="btn btn-outline-secondary mr-2">
+                                <i class="fas fa-times mr-1"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-save mr-1"></i>
+                                <span th:text="${proveedor.id == null || proveedor.id.isEmpty()} ? 'Guardar Proveedor' : 'Actualizar Proveedor'">Guardar</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</th:block>
+</body>
+</html>

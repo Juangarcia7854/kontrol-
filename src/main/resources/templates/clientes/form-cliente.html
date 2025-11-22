@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{layouts/admin-layout :: admin-layout(pageTitle=${pageTitle}, content=~{::content})}">
+      <head>
+    <title th:text="${pageTitle ?: 'Formulario de Cliente'}">Formulario de Cliente</title>
+</head>
+<body>
+<th:block th:fragment="content">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800" th:text="${pageTitle}">Formulario de Cliente</h1>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-md-10">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i th:class="${cliente.id == null} ? 'fas fa-user-plus mr-2' : 'fas fa-user-edit mr-2'"></i>
+                        <span th:text="${cliente.id == null} ? 'Registrar Nuevo Cliente' : 'Editar Cliente'">Detalles del Cliente</span>
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <form th:action="@{/clientes/guardar}" th:object="${cliente}" method="post">
+                        <input type="hidden" th:field="*{id}" />
+
+                        <div class="form-row mb-3">
+                            <div class="form-group col-md-6">
+                                <label for="nombre" class="form-label">Nombres:</label>
+                                <input type="text" th:field="*{nombre}" class="form-control" id="nombre" placeholder="Ej: Ana"
+                                       th:errorclass="is-invalid" required/>
+                                <div th:if="${#fields.hasErrors('nombre')}" th:errors="*{nombre}" class="invalid-feedback"></div>
+                            </div>
+                            <div class="form-group col-md-6">
+                                <label for="apellido" class="form-label">Apellidos:</label>
+                                <input type="text" th:field="*{apellido}" class="form-control" id="apellido" placeholder="Ej: Pérez Gómez"
+                                       th:errorclass="is-invalid" />
+                                <div th:if="${#fields.hasErrors('apellido')}" th:errors="*{apellido}" class="invalid-feedback"></div>
+                            </div>
+                        </div>
+
+                        <div class="form-row mb-3">
+                            <div class="form-group col-md-6">
+                                <label for="tipoDocumento" class="form-label">Tipo de Documento:</label>
+                                <select th:field="*{tipoDocumento}" class="form-control" id="tipoDocumento" th:errorclass="is-invalid" required>
+                                    <option value="">Seleccione...</option>
+                                    <option value="CC">Cédula de Ciudadanía (CC)</option>
+                                    <option value="CE">Cédula de Extranjería (CE)</option>
+                                    <option value="NIT">NIT</option>
+                                    <option value="Pasaporte">Pasaporte</option>
+                                    <option value="Otro">Otro</option>
+                                </select>
+                                <div th:if="${#fields.hasErrors('tipoDocumento')}" th:errors="*{tipoDocumento}" class="invalid-feedback d-block"></div>
+                            </div>
+                            <div class="form-group col-md-6">
+                                <label for="numeroDocumento" class="form-label">Número de Documento:</label>
+                                <input type="text" th:field="*{numeroDocumento}" class="form-control" id="numeroDocumento" placeholder="Ej: 123456789"
+                                       th:errorclass="is-invalid" required/>
+                                <div th:if="${#fields.hasErrors('numeroDocumento')}" th:errors="*{numeroDocumento}" class="invalid-feedback"></div>
+                            </div>
+                        </div>
+
+                        <div class="form-row mb-3">
+                            <div class="form-group col-md-6">
+                                <label for="email" class="form-label">Correo Electrónico:</label>
+                                <input type="email" th:field="*{email}" class="form-control" id="email" placeholder="cliente@example.com"
+                                       th:errorclass="is-invalid" />
+                                <div th:if="${#fields.hasErrors('email')}" th:errors="*{email}" class="invalid-feedback"></div>
+                            </div>
+                            <div class="form-group col-md-6">
+                                <label for="telefono" class="form-label">Teléfono:</label>
+                                <input type="tel" th:field="*{telefono}" class="form-control" id="telefono" placeholder="Ej: 3001234567"
+                                       th:errorclass="is-invalid" />
+                                <div th:if="${#fields.hasErrors('telefono')}" th:errors="*{telefono}" class="invalid-feedback"></div>
+                            </div>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label for="direccion" class="form-label">Dirección:</label>
+                            <input type="text" th:field="*{direccion}" class="form-control" id="direccion" placeholder="Ej: Calle Falsa 123, Apto 101"
+                                   th:errorclass="is-invalid" />
+                            <div th:if="${#fields.hasErrors('direccion')}" th:errors="*{direccion}" class="invalid-feedback"></div>
+                        </div>
+
+                        <div class="form-row mb-3">
+                            <div class="form-group col-md-6">
+                                <label for="ciudad" class="form-label">Ciudad:</label>
+                                <input type="text" th:field="*{ciudad}" class="form-control" id="ciudad" placeholder="Ej: Bogotá D.C."
+                                       th:errorclass="is-invalid" />
+                                <div th:if="${#fields.hasErrors('ciudad')}" th:errors="*{ciudad}" class="invalid-feedback"></div>
+                            </div>
+                            <div class="form-group col-md-6">
+                                <label for="pais" class="form-label">País:</label>
+                                <input type="text" th:field="*{pais}" class="form-control" id="pais" placeholder="Ej: Colombia"
+                                       th:errorclass="is-invalid" />
+                                <div th:if="${#fields.hasErrors('pais')}" th:errors="*{pais}" class="invalid-feedback"></div>
+                            </div>
+                        </div>
+
+                        <div class="form-group mb-4">
+                            <label for="notas" class="form-label">Notas (Opcional):</label>
+                            <textarea th:field="*{notas}" class="form-control" id="notas" rows="3" placeholder="Información adicional sobre el cliente"></textarea>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <div class="d-flex justify-content-end">
+                            <a th:href="@{/clientes}" class="btn btn-outline-secondary mr-2">
+                                <i class="fas fa-times mr-1"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-save mr-1"></i>
+                                <span th:text="${cliente.id == null} ? 'Guardar Cliente' : 'Actualizar Cliente'">Guardar</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</th:block>
+</body>
+</html>

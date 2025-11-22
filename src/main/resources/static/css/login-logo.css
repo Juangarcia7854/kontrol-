@@ -1,0 +1,6 @@
+/* Estilos para el logo NUEVO */
+.login-logo {
+    max-width: 150px; /* Ajusta el tamaño máximo del logo según necesites */
+    height: auto;
+    margin-bottom: 20px; /* Espacio entre el logo y el título "Login" */
+}

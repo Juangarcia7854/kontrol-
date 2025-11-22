@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:replace="~{layouts/admin-layout :: admin-layout(pageTitle=${pageTitle}, content=~{::.admin-content-inner})}">
+    <div class="admin-content-inner">
+        <div class="row">
+            
+            <div class="col-lg-7">
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">Información General de la Cuenta</h6>
+                    </div>
+                    <div class="card-body">
+                        <dl class="row">
+                            <dt class="col-sm-4">ID de Venta (Origen):</dt>
+                            <dd class="col-sm-8" th:text="${cuenta.ventaId}"></dd>
+                            <dt class="col-sm-4">Cliente:</dt>
+                            <dd class="col-sm-8" th:text="${cliente?.nombre ?: 'Cliente No Encontrado'}"></dd>
+                            <dt class="col-sm-4">Fecha de Vencimiento:</dt>
+                            <dd class="col-sm-8" th:text="${#temporals.format(cuenta.fechaDeVencimiento, 'dd/MM/yyyy')}"></dd>
+                            <dt class="col-sm-4">Estado Actual:</dt>
+                            <dd class="col-sm-8">
+                                <span class="badge" th:text="${cuenta.estado.name()}"></span>
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-5">
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">Resumen Financiero</h6>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-borderless table-sm">
+                            <tr>
+                                <th>Saldo Pendiente:</th>
+                                <td class="text-right font-weight-bolder" 
+                                    th:text="${#numbers.formatCurrency(cuenta.montoTotal.subtract(cuenta.montoPagado ?: 0))}">
+                                </td>
+                            </tr>
+                        </table>
+                        
+                        <hr>
+                        
+                        <a th:if="${cuenta.estado.name() == 'PENDIENTE' or cuenta.estado.name() == 'VENCIDA'}"
+                           th:href="@{/cuentas-por-cobrar/registrar-abono/{id}(id=${cuenta.id})}"
+                           class="btn btn-success btn-lg btn-block">
+                            <i class="fas fa-money-check-alt mr-2"></i> Registrar Abono
+                        </a>
+                        
+                        </div>
+                </div>
+            </div>
+        </div>
+        
+        </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:fragment="admin-layout(pageTitle, content)">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title th:text="${pageTitle ?: 'Sistema V.'}">Sistema V.</title>
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap/4.5.2/css/bootstrap.min.css}">
+    <link rel="stylesheet" th:href="@{/webjars/font-awesome/5.15.3/css/all.min.css}">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* Variables CSS para colores y dimensiones principales */
+        :root {
+            --sidebar-width: 260px;
+            --sidebar-bg-color: #4a43c9; /* Morado principal del dashboard de referencia */
+            --sidebar-logo-header-bg: #4039b0; /* Un tono ligeramente más oscuro para el header de la sidebar */
+            --sidebar-link-color: #bac0f7; /* Color de texto para enlaces no activos */
+            --sidebar-link-hover-color: #ffffff; /* Texto blanco al hacer hover */
+            --sidebar-link-active-color: #ffffff; /* Texto blanco para enlace activo */
+            --sidebar-link-active-bg: #5e56d8; /* Fondo para enlace activo (morado más claro) */
+            --sidebar-border-active: #ffffff; /* Color del borde izquierdo para enlace activo */
+
+            --topbar-height: 70px;
+            --topbar-bg-color: #ffffff; /* Fondo blanco para la barra superior */
+            --content-bg-color: #f8f9fc; /* Gris claro estilo SB Admin para el fondo del contenido */
+            
+            --text-primary-dark: #5a5c69; /* Color de texto principal oscuro (SB Admin) */
+            --text-muted-light: #b7b9cc; /* Color de texto atenuado (SB Admin) */
+            --border-color-light: #e3e6f0; /* Color de borde claro (SB Admin) */
+        }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: var(--content-bg-color);
+            margin: 0;
+            padding: 0;
+            font-size: 0.9rem; /* Tamaño de fuente base */
+            color: var(--text-primary-dark);
+        }
+
+        .admin-wrapper {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* --- Sidebar (Barra Lateral) --- */
+        .admin-sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--sidebar-bg-color);
+            color: var(--sidebar-link-color);
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100%;
+            padding-top: 0;
+            overflow-y: auto; /* Para scroll si hay muchos items */
+            z-index: 1000; /* Encima de otros contenidos */
+            transition: width 0.3s ease;
+        }
+
+        .admin-sidebar .sidebar-header {
+            height: var(--topbar-height); /* Misma altura que la topbar */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 1.5rem;
+            background-color: var(--sidebar-logo-header-bg); /* Fondo para el logo */
+        }
+
+        .admin-sidebar .sidebar-header .logo-text {
+            color: #ffffff;
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-decoration: none;
+            letter-spacing: 0.5px;
+        }
+        .admin-sidebar .sidebar-header .logo-text:hover {
+            color: #f0f0f0;
+        }
+        .admin-sidebar .sidebar-header .logo-text i {
+            margin-right: 8px;
+        }
+
+        .admin-sidebar .nav {
+            padding-top: 1rem;
+        }
+        .admin-sidebar .nav-item {
+            margin-bottom: 2px;
+        }
+
+        .admin-sidebar .nav-link {
+            color: var(--sidebar-link-color);
+            padding: 0.85rem 1.5rem;
+            display: flex;
+            align-items: center;
+            font-size: 0.9rem;
+            font-weight: 400;
+            border-left: 4px solid transparent;
+            transition: all 0.2s ease-in-out;
+            text-decoration: none;
+        }
+
+        .admin-sidebar .nav-link i.nav-icon {
+            margin-right: 12px;
+            width: 20px;
+            text-align: center;
+            font-size: 1em;
+            opacity: 0.9;
+        }
+
+        .admin-sidebar .nav-link:hover {
+            color: var(--sidebar-link-hover-color);
+            background-color: rgba(255,255,255,0.05);
+            border-left-color: var(--sidebar-border-active);
+        }
+        
+        .admin-sidebar .nav-link.active {
+            color: var(--sidebar-link-active-color);
+            background-color: var(--sidebar-link-active-bg);
+            border-left-color: var(--sidebar-border-active);
+            font-weight: 600;
+        }
+        
+        .admin-sidebar .nav-link:hover i.nav-icon,
+        .admin-sidebar .nav-link.active i.nav-icon {
+            opacity: 1;
+        }
+
+        .admin-sidebar .nav-link .badge {
+            margin-left: auto;
+            font-size: 0.7rem;
+            padding: 0.3em 0.5em;
+        }
+
+        /* --- Main Content Area (Contenido Principal y Topbar) --- */
+        .admin-main-content {
+            margin-left: var(--sidebar-width);
+            width: calc(100% - var(--sidebar-width));
+            padding-top: var(--topbar-height);
+            transition: margin-left 0.3s ease, width 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        
+        .admin-content-inner {
+            flex-grow: 1;
+            padding: 1.5rem;
+        }
+
+        /* --- Topbar (Barra Superior) --- */
+        .admin-topbar {
+            background-color: var(--topbar-bg-color);
+            height: var(--topbar-height);
+            position: fixed;
+            top: 0;
+            left: var(--sidebar-width);
+            right: 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+            z-index: 999;
+            transition: left 0.3s ease;
+        }
+        
+        .admin-topbar .topbar-search {
+            max-width: 350px;
+        }
+        .admin-topbar .topbar-search .form-control {
+            border-radius: 0.375rem;
+            font-size: 0.85rem;
+            background-color: var(--content-bg-color);
+            border: 1px solid var(--border-color-light);
+        }
+         .admin-topbar .topbar-search .input-group-append .btn {
+            background-color: var(--sidebar-bg-color);
+            border-color: var(--sidebar-bg-color);
+            color: #fff;
+        }
+        .admin-topbar .topbar-search .input-group-append .btn:hover {
+            background-color: var(--sidebar-link-active-bg);
+            border-color: var(--sidebar-link-active-bg);
+        }
+
+        .admin-topbar .user-info .nav-link {
+            color: var(--text-primary-dark);
+            padding-right: 0;
+            display: flex;
+            align-items: center;
+        }
+        .admin-topbar .user-info .user-name {
+             font-size: 0.85rem;
+             font-weight: 600;
+        }
+        .admin-topbar .user-info .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            margin-left: 0.75rem;
+            border: 2px solid var(--border-color-light);
+        }
+        .admin-topbar .user-info .dropdown-menu {
+            font-size: 0.85rem;
+            border-color: var(--border-color-light);
+            box-shadow: 0 0.5rem 1rem rgba(0,0,0,.15);
+        }
+        .admin-topbar .user-info .dropdown-item i {
+            color: var(--text-muted-light);
+            width: 16px;
+            margin-right: 0.5rem;
+        }
+
+        /* --- Footer del Admin (Dentro del contenido principal) --- */
+        .admin-footer {
+            padding: 1.25rem 1.5rem;
+            background-color: #ffffff;
+            text-align: center;
+            font-size: 0.8rem;
+            color: #858796;
+            margin-top: auto;
+            border-top: 1px solid var(--border-color-light);
+        }
+
+        /* Estilos para Tarjetas y Componentes Comunes */
+        .card {
+            border: 1px solid var(--border-color-light);
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, .15);
+            margin-bottom: 1.5rem;
+            border-radius: .35rem;
+        }
+        .card-header {
+            padding: .75rem 1.25rem;
+            margin-bottom: 0;
+            background-color: #f8f9fc;
+            border-bottom: 1px solid var(--border-color-light);
+            font-weight: 600;
+        }
+        .summary-card {
+            border: none;
+            border-radius: 0.5rem; 
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58,59,69,.15)!important; 
+            margin-bottom: 1.5rem;
+            display: flex; 
+            flex-direction: column;
+            height: 100%; 
+        }
+        .summary-card .card-body { padding: 1.5rem; flex-grow: 1; }
+        .summary-card .card-title { font-size: 0.8rem; font-weight: 700; margin-bottom: 0.25rem; text-transform: uppercase; letter-spacing: .05rem; color: #858796; }
+        .summary-card .card-value { font-size: 1.75rem; font-weight: 700; color: var(--text-primary-dark); }
+        .summary-card .card-icon { font-size: 2rem; color: #dddfeb !important; }
+        .border-left-primary { border-left: .25rem solid #4e73df!important; }
+        .border-left-success { border-left: .25rem solid #1cc88a!important; }
+        .border-left-info { border-left: .25rem solid #36b9cc!important; }
+        .border-left-warning { border-left: .25rem solid #f6c23e!important; }
+        .border-left-purple { border-left: .25rem solid var(--sidebar-bg-color)!important; }
+
+        .sidebar-toggler {
+            background-color: transparent;
+            border: none;
+            color: var(--text-primary-dark);
+            font-size: 1.2rem;
+            padding: 0.25rem 0.5rem;
+            display: none;
+        }
+        .sidebar-toggler:hover {
+            color: var(--sidebar-bg-color);
+        }
+
+        /* Estilos de Impresión Específicos para el Layout */
+        @media print {
+            .no-print { /* Esta clase se usará en los elementos del layout */
+                display: none !important;
+            }
+            /* Asegurar que el contenido principal ocupe todo el espacio */
+            .admin-main-content, .admin-content-inner {
+                margin-left: 0 !important;
+                width: 100% !important;
+                padding-top: 0 !important;
+                padding: 0 !important; /* Quitar padding para que #printableArea controle el suyo */
+            }
+            body {
+                background-color: #fff !important; /* Fondo blanco para impresión */
+            }
+        }
+
+        /* Responsividad */
+        @media (max-width: 768px) {
+            .admin-sidebar { width: 0; overflow: hidden; }
+            .admin-sidebar.toggled { width: var(--sidebar-width); }
+            .admin-main-content { margin-left: 0; width: 100%; }
+            .admin-main-content.sidebar-toggled { margin-left: var(--sidebar-width); width: calc(100% - var(--sidebar-width)); }
+            .admin-topbar { left: 0; }
+            .admin-topbar.sidebar-toggled { left: var(--sidebar-width); }
+            .sidebar-toggler { display: inline-block; }
+            .admin-topbar .topbar-search { display: none; }
+            .admin-topbar .user-info .user-name { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="admin-wrapper">
+    <nav class="admin-sidebar no-print" id="adminSidebar">
+        <div class="sidebar-header">
+            <a th:href="@{/dashboard}" class="logo-text"><i class="fas fa-store-alt"></i> SISTEMA V.</a>
+        </div>
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link" th:href="@{/dashboard}"
+                   th:classappend="${(#httpServletRequest.requestURI == '/dashboard' or #httpServletRequest.requestURI == '/') ? 'active' : ''}">
+                    <i class="fas fa-home nav-icon"></i> Dashboard
+                </a>
+            </li>
+            <li class="nav-item" sec:authorize="isAuthenticated()">
+                <a class="nav-link" th:href="@{/ventas}"
+                   th:classappend="${#httpServletRequest.requestURI.startsWith('/ventas') ? 'active' : ''}">
+                    <i class="fas fa-shopping-cart nav-icon"></i> Ventas
+                </a>
+            </li>
+            <li class="nav-item" sec:authorize="isAuthenticated()">
+                <a class="nav-link" th:href="@{/productos}"
+                   th:classappend="${#httpServletRequest.requestURI.startsWith('/productos') ? 'active' : ''}">
+                    <i class="fas fa-boxes nav-icon"></i> Productos
+                </a>
+            </li>
+             <li class="nav-item" sec:authorize="isAuthenticated()">
+                <a class="nav-link" th:href="@{/clientes}"
+                   th:classappend="${#httpServletRequest.requestURI.startsWith('/clientes') ? 'active' : ''}">
+                    <i class="fas fa-address-book nav-icon"></i> Clientes
+                </a>
+            </li>
+            <li class="nav-item" sec:authorize="isAuthenticated()">
+                <a class="nav-link" th:href="@{/proveedores}"
+                   th:classappend="${#httpServletRequest.requestURI.startsWith('/proveedores') ? 'active' : ''}">
+                    <i class="fas fa-truck-loading nav-icon"></i> Proveedores
+                </a>
+            </li>
+            <li class="nav-item" sec:authorize="isAuthenticated()">
+                <a class="nav-link" th:href="@{/devoluciones}"
+                   th:classappend="${#httpServletRequest.requestURI.startsWith('/devoluciones') ? 'active' : ''}">
+                    <i class="fas fa-undo-alt nav-icon"></i> Devoluciones
+                </a>
+            </li>
+            <li class="nav-item" sec:authorize="hasRole('ROLE_ADMIN')">
+                <a class="nav-link" th:href="@{/reportes}"
+                   th:classappend="${#httpServletRequest.requestURI.startsWith('/reportes') ? 'active' : ''}">
+                    <i class="fas fa-chart-bar nav-icon"></i> Reportes
+                </a>
+            </li>
+             <li class="nav-item" sec:authorize="hasRole('ROLE_ADMIN')">
+                <a class="nav-link" th:href="@{/admin/usuarios}"
+                   th:classappend="${#httpServletRequest.requestURI.startsWith('/admin/usuarios') ? 'active' : ''}">
+                    <i class="fas fa-users-cog nav-icon"></i> Gestión Usuarios
+                </a>
+            </li>
+        </ul>
+    </nav>
+
+    <div class="admin-main-content" id="adminMainContent">
+        <nav class="admin-topbar no-print" id="adminTopbar">
+            <button class="sidebar-toggler" id="sidebarToggler" type="button">
+                <i class="fas fa-bars"></i>
+            </button>
+            <form class="d-none d-sm-inline-block form-inline mr-auto ml-md-3 my-2 my-md-0 mw-100 topbar-search">
+                <div class="input-group">
+                    <input type="text" class="form-control" placeholder="Buscar..."
+                           aria-label="Search" aria-describedby="basic-addon2">
+                    <div class="input-group-append">
+                        <button class="btn" type="button">
+                            <i class="fas fa-search fa-sm"></i>
+                        </button>
+                    </div>
+                </div>
+            </form>
+            <ul class="navbar-nav ml-auto user-info">
+                <li class="nav-item dropdown no-arrow">
+                    <a class="nav-link dropdown-toggle" href="#" id="userDropdownAdminLayout" role="button"
+                       data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <span class="mr-2 d-none d-lg-inline user-name"
+                              sec:authorize="isAuthenticated()"
+                              th:text="${adminUsername ?: #authentication.name}">Usuario</span>
+                        <img class="user-avatar" th:src="@{https://placehold.co/60x60/4A43C9/FFFFFF/?text=A}" alt="User Avatar">
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in"
+                         aria-labelledby="userDropdownAdminLayout">
+                        <a class="dropdown-item" href="#">
+                            <i class="fas fa-user fa-sm fa-fw"></i> Perfil
+                        </a>
+                        <a class="dropdown-item" href="#">
+                            <i class="fas fa-cogs fa-sm fa-fw"></i> Configuración
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <form th:action="@{/logout}" method="post" class="d-block">
+                             <button type="submit" class="dropdown-item" style="cursor:pointer;">
+                                <i class="fas fa-sign-out-alt fa-sm fa-fw"></i> Cerrar Sesión
+                            </button>
+                        </form>
+                    </div>
+                </li>
+            </ul>
+        </nav>
+
+        <div class="admin-content-inner">
+            <th:block th:replace="${content}"></th:block>
+        </div>
+        
+        <footer class="admin-footer no-print">
+            <div class="container my-auto">
+                <div class="copyright text-center my-auto">
+                    <span>Copyright &copy; Tu Sistema de Ventas <span th:text="${#dates.year(#dates.createNow())}">2025</span></span>
+                </div>
+            </div>
+        </footer>
+    </div> 
+</div> 
+
+<script th:src="@{/webjars/jquery/3.5.1/jquery.min.js}"></script>
+<script th:src="@{/webjars/popper.js/1.16.0/umd/popper.min.js}"></script>
+<script th:src="@{/webjars/bootstrap/4.5.2/js/bootstrap.min.js}"></script>
+<script>
+    $(document).ready(function () {
+        $('#sidebarToggler').on('click', function () {
+            $('#adminSidebar').toggleClass('toggled');
+            $('#adminMainContent').toggleClass('sidebar-toggled');
+            $('#adminTopbar').toggleClass('sidebar-toggled');
+        });
+    });
+</script>
+</body>
+</html>

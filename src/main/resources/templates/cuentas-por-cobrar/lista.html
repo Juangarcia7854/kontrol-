@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+    <div th:replace="~{layouts/admin-layout :: admin-layout(pageTitle=${pageTitle}, content=~{::.admin-content-inner})}">
+        <div class="admin-content-inner">
+            <div class="d-sm-flex align-items-center justify-content-between mb-4">
+                <h1 class="h3 mb-0 text-gray-800">Gestión de Cuentas por Cobrar</h1>
+                <a th:href="@{/cuentas-por-cobrar/nuevo}" class="btn btn-primary btn-icon-split">
+                    <span class="icon text-white-50"><i class="fas fa-plus"></i></span>
+                    <span class="text">Crear Nueva Cuenta</span>
+                </a>
+            </div>
+
+            <div th:if="${successMessage}" class="alert alert-success" role="alert" th:text="${successMessage}"></div>
+            <div th:if="${errorMessage}" class="alert alert-danger" role="alert" th:text="${errorMessage}"></div>
+
+            <div class="card shadow mb-4">
+                
+                <div class="card-header py-3">
+                    <form th:action="@{/cuentas-por-cobrar}" method="get" th:object="${filtro}" class="row g-3 align-items-center">
+                        <div class="col-md-5 mb-2">
+                            <input type="text" th:field="*{term}" class="form-control" placeholder="Buscar por Venta ID o Cliente" />
+                        </div>
+                        
+                        <div class="col-md-3 mb-2">
+                            <select th:field="*{status}" class="form-control" onchange="this.form.submit()">
+                                <option value="TODOS">Todos los Estados</option>
+                                <option value="ACTIVOS">Pendientes y Vencidas (ACTIVOS)</option>
+                                <option value="PENDIENTE">PENDIENTE</option>
+                                <option value="VENCIDA">VENCIDA</option>
+                                <option value="PAGADA">PAGADA</option>
+                                <option value="ANULADA">ANULADA</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-2 mb-2">
+                            <button type="submit" class="btn btn-primary btn-block">
+                                <i class="fas fa-search"></i> Filtrar
+                            </button>
+                        </div>
+                        
+                        <div class="col-md-2 mb-2">
+                            <a th:href="@{/cuentas-por-cobrar}" class="btn btn-outline-secondary btn-block">
+                                <i class="fas fa-sync-alt"></i> Limpiar
+                            </a>
+                        </div>
+                        
+                        <input type="hidden" th:field="*{page}" />
+                        <input type="hidden" th:field="*{size}" />
+                    </form>
+                </div>
+
+                <div class="card-body">
+                    <div th:if="${cuentas.isEmpty()}" class="alert alert-info text-center" role="alert">
+                        No se encontraron cuentas por cobrar con los filtros aplicados.
+                    </div>
+                    
+                    <div class="table-responsive" th:if="${!cuentas.isEmpty()}">
+                        <table class="table table-bordered" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th>ID Venta</th>
+                                    <th>Cliente</th>
+                                    <th>Monto Total</th>
+                                    <th>Monto Pendiente</th>
+                                    <th>Estado</th>
+                                    <th>Vencimiento</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="cuenta : ${cuentas}">
+                                    <td th:text="${cuenta.ventaId}"></td>
+                                    <td th:text="${clientesMap[cuenta.clienteId]?.nombre ?: 'Cliente No Disp.'}"></td>
+                                    <td th:text="${#numbers.formatCurrency(cuenta.montoTotal)}"></td>
+                                    
+                                    <td th:with="montoPagado=${cuenta.montoPagado ?: 0}" 
+                                        th:text="${#numbers.formatCurrency(cuenta.montoTotal.subtract(montoPagado))}"
+                                        th:classappend="${cuenta.estado.name() == 'VENCIDA' ? 'text-danger font-weight-bold' : ''}">
+                                    </td>
+                                    
+                                    <td>
+                                        <span class="badge"
+                                              th:classappend="${cuenta.estado.name() == 'PENDIENTE' ? 'badge-warning' : (cuenta.estado.name() == 'PAGADA' ? 'badge-success' : (cuenta.estado.name() == 'VENCIDA' ? 'badge-danger' : 'badge-secondary'))}"
+                                              th:text="${cuenta.estado.name()}">
+                                        </span>
+                                    </td>
+                                    <td th:text="${#temporals.format(cuenta.fechaDeVencimiento, 'dd/MM/yyyy')}"></td>
+                                    
+                                    <td>
+                                        <a th:href="@{/cuentas-por-cobrar/detalle/{id}(id=${cuenta.id})}" 
+                                           class="btn btn-info btn-sm" title="Ver Detalle">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        
+                                        <a th:if="${cuenta.estado.name() == 'PENDIENTE' or cuenta.estado.name() == 'VENCIDA'}"
+                                           th:href="@{/cuentas-por-cobrar/registrar-abono/{id}(id=${cuenta.id})}" 
+                                           class="btn btn-success btn-sm" title="Registrar Abono">
+                                            <i class="fas fa-money-check-alt"></i>
+                                        </a>
+
+                                        <form th:action="@{/cuentas-por-cobrar/anular/{id}(id=${cuenta.id})}" method="POST" class="d-inline"
+                                              th:if="${cuenta.estado.name() != 'PAGADA' and cuenta.estado.name() != 'ANULADA'}"
+                                              onsubmit="return confirm('¿Estás seguro de que deseas anular esta cuenta? Esta acción no se puede deshacer.');">
+                                            <button type="submit" class="btn btn-danger btn-sm" title="Anular Cuenta">
+                                                <i class="fas fa-times-circle"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <div th:if="${totalPages > 0}" class="row mt-4">
+                <div class="col-sm-12 col-md-5">
+                    <div class="dataTables_info">
+                        Mostrando [[${page.number + 1}]] de [[${totalPages}]] páginas. Total de registros: [[${totalItems}]]
+                    </div>
+                </div>
+                <div class="col-sm-12 col-md-7">
+                    <nav aria-label="Page navigation example">
+                        <ul class="pagination justify-content-end">
+                            
+                            <th:block th:with="link='/cuentas-por-cobrar?size=' + ${filtro.size} + '&term=' + ${filtro.term} + '&status=' + ${filtro.status}">
+                            
+                                <li class="page-item" th:classappend="${page.first} ? 'disabled'">
+                                    <a class="page-link" th:href="@{${link} + '&page=0'}" aria-label="First">
+                                        <span aria-hidden="true">&laquo;&laquo;</span>
+                                    </a>
+                                </li>
+                                
+                                <li class="page-item" th:classappend="${page.first} ? 'disabled'">
+                                    <a class="page-link" th:href="@{${link} + '&page=' + ${page.number - 1}}" aria-label="Previous">
+                                        <span aria-hidden="true">&laquo;</span>
+                                    </a>
+                                </li>
+                                
+                                <th:block th:each="i : ${#numbers.sequence(0, totalPages - 1)}">
+                                    <li class="page-item" th:classappend="${i == page.number} ? 'active'">
+                                        <a class="page-link" th:href="@{${link} + '&page=' + ${i}}">[[${i + 1}]]</a>
+                                    </li>
+                                </th:block>
+                                
+                                <li class="page-item" th:classappend="${page.last} ? 'disabled'">
+                                    <a class="page-link" th:href="@{${link} + '&page=' + ${page.number + 1}}" aria-label="Next">
+                                        <span aria-hidden="true">&raquo;</span>
+                                    </a>
+                                </li>
+
+                                <li class="page-item" th:classappend="${page.last} ? 'disabled'">
+                                    <a class="page-link" th:href="@{${link} + '&page=' + ${totalPages - 1}}" aria-label="Last">
+                                        <span aria-hidden="true">&raquo;&raquo;</span>
+                                    </a>
+                                </li>
+                                
+                            </th:block>
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+            </div>
+    </div>
+</body>
+</html>

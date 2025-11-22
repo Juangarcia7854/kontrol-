@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org" 
+      th:replace="~{layouts/admin-layout :: admin-layout(pageTitle='Entrenamiento de Modelos', content=~{::main})}">
+<head>
+    <title>Entrenamiento de Modelos</title>
+</head>
+<body>
+<main>
+    <div class="container-fluid px-4">
+        <h1 class="mt-4">Entrenamiento de Modelos de Producto (Weka J48)</h1>
+        <ol class="breadcrumb mb-4">
+            <li class="breadcrumb-item"><a th:href="@{/dashboard}">Dashboard</a></li>
+            <li class="breadcrumb-item active">Entrenamiento de Modelos</li>
+        </ol>
+
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Re-entrenar Modelos de IA</h6>
+            </div>
+            <div class="card-body">
+                <p>
+                    Haz clic en el botón para re-entrenar los 3 nuevos modelos de producto:
+                </p>
+                <ul>
+                    <li><b>Venta Rápida:</b> ¿El producto se venderá pronto?</li>
+                    <li><b>Riesgo de Devolución:</b> ¿El producto tiene alto riesgo de ser devuelto?</li>
+                    <li><b>Necesita Promoción:</b> ¿El producto necesita un descuento para moverse?</li>
+                </ul>
+                <p><strong>Advertencia:</strong> Este proceso puede ser intensivo y tardar varios segundos.</p>
+
+                <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+                    <strong th:text="${successMessage}"></strong>
+                    <p th:utext="${results}" class="mb-0 mt-2"></p>
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                
+                <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <strong th:text="${errorMessage}"></strong>
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+
+                <form th:action="@{/admin/modelos/entrenar-todos}" method="POST">
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="fas fa-brain mr-2"></i> Entrenar Nuevos Modelos
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</main>
+</body>
+</html>

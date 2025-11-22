@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org" 
+      th:replace="~{layouts/admin-layout :: admin-layout(
+          pageTitle='Pruebas de Producto', 
+          content=~{::main}
+      )}">
+<head>
+    <title>Pruebas de Modelos de Producto</title>
+    <style>
+        /* Estilos para arreglar los select en algunas plantillas */
+        select.form-control { height: auto !important; padding-top: 10px !important; padding-bottom: 10px !important; line-height: normal !important; }
+        .choices__inner { padding-top: 8px !important; padding-bottom: 8px !important; min-height: 42px !important; line-height: normal !important; }
+        .select2-container .select2-selection--single { height: 42px !important; }
+        .select2-container .select2-selection--single .select2-selection__rendered { line-height: 40px !important; padding-top: 0 !important; padding-bottom: 0 !important; }
+    </style>
+</head>
+<body>
+<main>
+    <div class="container-fluid px-4">
+        <h1 class="mt-4">Módulo de Pruebas de Producto (Weka)</h1>
+        <ol class="breadcrumb mb-4">
+            <li class="breadcrumb-item"><a th:href="@{/dashboard}">Dashboard</a></li>
+            <li class="breadcrumb-item active">Pruebas de Producto</li>
+        </ol>
+
+        <div class="row">
+            <div class="col-lg-6">
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-flask mr-2"></i>Probar Producto</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label for="productoId">Selecciona un Producto para Analizar</label>
+                            <select class="form-control" id="productoId" name="productoId" required
+                                    th:onchange="|window.location.href = '@{/admin/pruebas-prediccion}?productoId=' + this.value|">
+                                <option value="">-- Elige un producto --</option>
+                                <option th:each="prod : ${productos}"
+                                        th:value="${prod.id}"
+                                        th:text="${prod.nombre}"
+                                        th:selected="${prod.id == param.productoId}">
+                                </option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6" th:if="${resultado}">
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-success"><i class="fas fa-clipboard-check mr-2"></i>Resultados del Análisis</h6>
+                    </div>
+                    
+                    <div th:if="${resultado.error}" class="card-body">
+                        <div class="alert alert-danger" th:text="${resultado.error}"></div>
+                    </div>
+                    
+                    <div th:if="${resultado.producto != null}" class="card-body">
+                        <h4 class="font-weight-bold text-dark" th:text="${resultado.producto.nombre}">Nombre del Producto</h4>
+                        <p class="text-muted small mb-4" th:text="${resultado.detalles}"></p>
+                        
+                        <div class="row">
+                            <div class="col-md-4 text-center mb-4 border-right">
+                                <h6 class="text-uppercase text-xs font-weight-bold text-primary mb-2">¿Se Venderá Pronto?</h6>
+                                
+                                <h2 th:if="${resultado.seVendePronto == 'SI'}" class="text-success font-weight-bold mb-1">SÍ</h2>
+                                <h2 th:if="${resultado.seVendePronto == 'NO'}" class="text-secondary font-weight-bold mb-1">NO</h2>
+                                
+                                <div class="mb-2">
+                                    <span class="badge badge-light border px-2 py-1" th:text="'Confianza: ' + ${resultado.confianzaVenta}"></span>
+                                </div>
+
+                                <div class="alert alert-info p-2 small m-0 text-left">
+                                    <i class="fas fa-info-circle mr-1"></i> <span th:text="${resultado.recomendacionVenta}"></span>
+                                </div>
+                            </div>
+
+                            <div class="col-md-4 text-center mb-4 border-right">
+                                <h6 class="text-uppercase text-xs font-weight-bold text-danger mb-2">¿Riesgo Devolución?</h6>
+                                
+                                <h2 th:if="${resultado.riesgoDevolucion == 'SI'}" class="text-danger font-weight-bold mb-1">ALTO</h2>
+                                <h2 th:if="${resultado.riesgoDevolucion == 'NO'}" class="text-success font-weight-bold mb-1">BAJO</h2>
+                                
+                                <div class="mb-2">
+                                    <span class="badge badge-light border px-2 py-1" th:text="'Confianza: ' + ${resultado.confianzaDevolucion}"></span>
+                                </div>
+
+                                <div class="alert alert-warning p-2 small m-0 text-left">
+                                    <i class="fas fa-exclamation-triangle mr-1"></i> <span th:text="${resultado.recomendacionDevolucion}"></span>
+                                </div>
+                            </div>
+
+                            <div class="col-md-4 text-center mb-4">
+                                <h6 class="text-uppercase text-xs font-weight-bold text-warning mb-2">¿Necesita Promoción?</h6>
+                                
+                                <h2 th:if="${resultado.necesitaPromocion == 'SI'}" class="text-warning font-weight-bold mb-1">SÍ</h2>
+                                <h2 th:if="${resultado.necesitaPromocion == 'NO'}" class="text-secondary font-weight-bold mb-1">NO</h2>
+                                
+                                <div class="mb-2">
+                                    <span class="badge badge-light border px-2 py-1" th:text="'Confianza: ' + ${resultado.confianzaPromocion}"></span>
+                                </div>
+
+                                <div class="alert alert-primary p-2 small m-0 text-left">
+                                    <i class="fas fa-tag mr-1"></i> <span th:text="${resultado.recomendacionPromocion}"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+</body>
+</html>

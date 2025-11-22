@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{layouts/admin-layout :: admin-layout(pageTitle=${pageTitle}, content=~{::content})}">
+<head>
+    <style>
+        .product-detail-img { max-width: 100%; height: auto; border-radius: .5rem; box-shadow: 0 .5rem 1rem rgba(0,0,0,.15); }
+        .recommendation-card { text-decoration: none; color: inherit; }
+        .recommendation-card:hover { text-decoration: none; }
+        .recommendation-card .card:hover { box-shadow: 0 .5rem 1rem rgba(0,0,0,.15); transform: translateY(-5px); transition: all .2s ease-in-out; }
+        .recommendation-img { height: 150px; object-fit: cover; }
+    </style>
+</head>
+<body>
+<th:block th:fragment="content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0 text-gray-800" th:text="${pageTitle}">Detalle de Producto</h1>
+        <div>
+            <a th:href="@{/productos}" class="btn btn-secondary btn-sm"><i class="fas fa-arrow-left mr-2"></i>Volver a la lista</a>
+            <a sec:authorize="hasAnyRole('ROLE_ADMIN', 'ROLE_GESTOR')" th:href="@{/productos/editar/{id}(id=${producto.id})}" class="btn btn-warning btn-sm">
+                <i class="fas fa-edit mr-2"></i>Editar Producto
+            </a>
+        </div>
+    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <img th:if="${producto.imagenUrl}" th:src="@{/productos/api/images/{filename}(filename=${producto.imagenUrl})}" th:alt="${producto.nombre}" class="product-detail-img">
+                    <div th:unless="${producto.imagenUrl}" class="placeholder-content">
+                        <i class="fas fa-image fa-4x text-muted"></i>
+                    </div>
+                </div>
+                <div class="col-md-8">
+                    <h2 th:text="${producto.nombre}">Nombre del Producto</h2>
+                    <p class="text-muted" th:text="${producto.categoria}">Categoría</p>
+                    <p th:text="${producto.descripcion}">Descripción larga del producto.</p>
+                    <hr>
+                    <h4>
+                        <span class="font-weight-bold" th:text="${#numbers.formatCurrency(producto.precio)}"></span>
+                    </h4>
+                    <p class="mb-1"><strong>Stock Disponible:</strong> <span th:text="${producto.stock}"></span> unidades</p>
+                    <p><strong>Código de Barras:</strong> <span th:text="${producto.codigoBarras ?: 'N/A'}"></span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="recommendations-section">
+        <h4 class="mb-3">Comprados Frecuentemente Juntos</h4>
+        <div id="recommendations-container" class="row">
+            <div id="loader" class="col-12 text-center p-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="sr-only">Buscando recomendaciones...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <th:block layout:fragment="page-scripts">
+        <script th:inline="javascript">
+            document.addEventListener('DOMContentLoaded', function() {
+                const productoId = /*[[${producto.id}]]*/ null;
+                const recommendationsContainer = document.getElementById('recommendations-container');
+                const loader = document.getElementById('loader');
+
+                const locale = /*[[${#strings.replace(#locale.toString(), '_', '-')}]]*/ 'es-CO';
+                const currencyCode = /*[[${configuracionSistema.monedaPorDefecto}]]*/ 'COP';
+
+                if (productoId) {
+                    fetch(`/productos/${productoId}/recomendaciones`)
+                        .then(response => response.json())
+                        .then(productos => {
+                            loader.remove();
+                            if (productos.length > 0) {
+                                productos.forEach(p => {
+                                    const formattedPrice = p.precio.toLocaleString(locale, {style: 'currency', currency: currencyCode});
+                                    const cardHtml = `
+                                        <div class="col-md-4 mb-4">
+                                            <a href="/productos/${p.id}" class="recommendation-card">
+                                                <div class="card h-100">
+                                                    <img src="/productos/api/images/${p.imagenUrl}" class="card-img-top recommendation-img" alt="${p.nombre}">
+                                                    <div class="card-body">
+                                                        <h5 class="card-title font-weight-bold text-primary">${p.nombre}</h5>
+                                                        <p class="card-text">${formattedPrice}</p>
+                                                    </div>
+                                                </div>
+                                            </a>
+                                        </div>
+                                    `;
+                                    recommendationsContainer.innerHTML += cardHtml;
+                                });
+                            } else {
+                                recommendationsContainer.innerHTML = '<div class="col-12"><p class="text-muted">No hay recomendaciones para este producto por el momento.</p></div>';
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error al cargar recomendaciones:', error);
+                            loader.remove();
+                            recommendationsContainer.innerHTML = '<div class="col-12"><p class="text-danger">No se pudieron cargar las recomendaciones.</p></div>';
+                        });
+                }
+            });
+        </script>
+    </th:block>
+</body>
+</html>
