@@ -50,7 +50,19 @@ public class DataInitializer implements CommandLineRunner {
             usuarioRepository.save(admin);
             
             // Mensaje en la consola para avisar que se creó con éxito.
-            System.out.println("Usuario 'admin' creado.");
+            System.out.println("Usuario 'admin' creado con roles: ROLE_ADMIN, ROLE_USER.");
+        }
+
+        // Crear un usuario con un rol menor (por ejemplo, ROLE_VENDEDOR para un vendedor)
+        if (!usuarioRepository.existsByUsername("vendedor")) {
+            Usuario vendedor = new Usuario();
+            vendedor.setUsername("vendedor");
+            vendedor.setPassword(passwordEncoder.encode("vendedor123"));
+            vendedor.setNombreCompleto("Vendedor del Sistema");
+            vendedor.setRoles(Set.of("ROLE_VENDEDOR"));
+            vendedor.setEnabled(true);
+            usuarioRepository.save(vendedor);
+            System.out.println("Usuario 'vendedor' creado con rol: ROLE_VENDEDOR.");
         }
                 
         }
